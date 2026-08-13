@@ -13,7 +13,19 @@ describe('QueryProviderFactory', () => {
   beforeEach(() => {
     // Reseta a instância singleton antes de cada teste
     QueryProviderFactory.resetInstance()
+    
+    // Cria factory com mock provider deterministic (successRate: 100)
     factory = QueryProviderFactory.getInstance()
+    
+    // Remove o mock provider padrão e recria com successRate 100
+    factory.unregister('mock')
+    const deterministicMock = new MockQueryProvider({ successRate: 100 })
+    factory.register('mock', deterministicMock, {
+      id: 'mock-001',
+      slug: 'mock-provider',
+      type: 'mock',
+      active: true,
+    })
   })
 
   afterEach(() => {

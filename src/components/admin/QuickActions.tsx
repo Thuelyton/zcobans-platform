@@ -10,6 +10,8 @@ import {
   Phone,
   Shield,
   ArrowRight,
+  FileDown,
+  FileText,
 } from 'lucide-react'
 
 export interface QuickAction {
@@ -19,6 +21,12 @@ export interface QuickAction {
   icon: React.ReactNode
   color: 'emerald' | 'blue' | 'purple' | 'amber'
   enabled?: boolean
+  onClick?: () => void
+}
+
+interface QuickActionsProps {
+  actions?: QuickAction[]
+  onOpenModal?: (type?: string) => void
 }
 
 const defaultActions: QuickAction[] = [
@@ -70,6 +78,22 @@ const defaultActions: QuickAction[] = [
     color: 'blue',
     enabled: true,
   },
+  {
+    name: 'Extratos CNIS & IN100',
+    description: 'Solicitar extratos com ou sem QR Code',
+    href: '#',
+    icon: <FileDown className="h-5 w-5" />,
+    color: 'blue',
+    enabled: true,
+  },
+  {
+    name: 'Históricos INSS',
+    description: 'HISCRE, HISMED, Carta de Concessão e outros',
+    href: '#',
+    icon: <FileText className="h-5 w-5" />,
+    color: 'purple',
+    enabled: true,
+  },
 ]
 
 const colorMap = {
@@ -95,7 +119,7 @@ const colorMap = {
   },
 }
 
-export function QuickActions({ actions = defaultActions }: { actions?: QuickAction[] }) {
+export function QuickActions({ actions = defaultActions, onOpenModal }: QuickActionsProps) {
   return (
     <div className="rounded-xl border border-slate-800 bg-[#111827] p-6">
       <h3 className="mb-4 text-lg font-semibold text-white">Ações Rápidas</h3>
@@ -104,17 +128,10 @@ export function QuickActions({ actions = defaultActions }: { actions?: QuickActi
           .filter((action) => action.enabled !== false)
           .map((action) => {
             const colors = colorMap[action.color]
-            return (
-              <Link
-                key={action.name}
-                href={action.href}
-                className={clsx(
-                  'group flex flex-col items-center gap-3 rounded-lg border p-4 text-center transition-all duration-200',
-                  colors.bg,
-                  colors.border,
-                  'hover:scale-[1.02] hover:shadow-lg'
-                )}
-              >
+            const isModalAction = action.href === '#' && onOpenModal
+            
+            const content = (
+              <>
                 <div className={clsx('rounded-lg bg-slate-800/50 p-3', colors.icon)}>
                   {action.icon}
                 </div>
@@ -123,6 +140,35 @@ export function QuickActions({ actions = defaultActions }: { actions?: QuickActi
                   <p className="mt-0.5 text-xs text-slate-400">{action.description}</p>
                 </div>
                 <ArrowRight className="h-4 w-4 text-slate-500 opacity-0 transition-opacity group-hover:opacity-100" />
+              </>
+            )
+
+            const baseClassName = clsx(
+              'group flex flex-col items-center gap-3 rounded-lg border p-4 text-center transition-all duration-200',
+              colors.bg,
+              colors.border,
+              'hover:scale-[1.02] hover:shadow-lg'
+            )
+
+            if (isModalAction) {
+              return (
+                <button
+                  key={action.name}
+                  onClick={() => onOpenModal()}
+                  className={baseClassName}
+                >
+                  {content}
+                </button>
+              )
+            }
+
+            return (
+              <Link
+                key={action.name}
+                href={action.href}
+                className={baseClassName}
+              >
+                {content}
               </Link>
             )
           })}

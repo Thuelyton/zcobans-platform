@@ -21,11 +21,22 @@ import {
   FileText,
   HelpCircle,
   ChevronDown,
+  FileDown,
+  FileText as FileTextIcon,
+  MoreHorizontal,
+  Download,
+  RefreshCw,
+  Database,
+  CreditCard as CreditCardIcon,
+  UserCheck,
+  Lock,
+  Unlock,
+  Layers,
 } from 'lucide-react'
 import { clsx } from 'clsx'
 import { useState } from 'react'
 
-// Grupo: Consultas
+// Grupo: Consultas (itens principais)
 const consultationGroup = [
   { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'Consultas', href: '/admin/consultas', icon: FileSearch },
@@ -35,6 +46,36 @@ const consultationGroup = [
   { name: 'Créditos', href: '/admin/creditos', icon: Wallet },
   { name: 'Histórico', href: '/admin/historico', icon: Clock },
   { name: 'Relatórios', href: '/admin/relatorios', icon: BarChart3 },
+]
+
+// Subgrupo: Extratos CNIS
+const extratosCnisGroup = [
+  { name: 'CNIS Online', href: '/admin/consultas?tipo=cnis_online', icon: Download },
+  { name: 'CNIS c/ QR Code', href: '/admin/consultas?tipo=cnis_online_qr', icon: RefreshCw },
+  { name: 'CNIS s/ QR Code', href: '/admin/consultas?tipo=cnis_online_sem_qr', icon: FileDown },
+  { name: 'CNIS Offline CPF', href: '/admin/consultas?tipo=cnis_offline_cpf', icon: Database },
+  { name: 'Consulta CNIS', href: '/admin/consultas?tipo=consulta_cnis', icon: FileSearch },
+  { name: 'Atualização CNIS', href: '/admin/consultas?tipo=atualizacao_cnis', icon: RefreshCw },
+]
+
+// Subgrupo: Documentos INSS
+const documentosINSSGroup = [
+  { name: 'IN100', href: '/admin/consultas?tipo=in100', icon: FileTextIcon },
+  { name: 'HISCRE', href: '/admin/consultas?tipo=hiscre', icon: FileTextIcon },
+  { name: 'HISMED', href: '/admin/consultas?tipo=hismed', icon: FileTextIcon },
+  { name: 'HISATU', href: '/admin/consultas?tipo=hisatu', icon: FileTextIcon },
+  { name: 'TITULA', href: '/admin/consultas?tipo=titula', icon: FileTextIcon },
+  { name: 'INFBEN', href: '/admin/consultas?tipo=infben', icon: FileTextIcon },
+  { name: 'Carta de Concessão', href: '/admin/consultas?tipo=carta_concessao', icon: FileTextIcon },
+]
+
+// Subgrupo: Outros Serviços INSS
+const outrosServicosINSSGroup = [
+  { name: 'CRAS', href: '/admin/consultas?tipo=cras', icon: Layers },
+  { name: 'Prova de Vida', href: '/admin/consultas?tipo=prova_vida', icon: UserCheck },
+  { name: 'Subida de Nível', href: '/admin/consultas?tipo=subida_nivel', icon: CreditCardIcon },
+  { name: 'Desbloqueio NB', href: '/admin/consultas?tipo=desbloqueio_nb', icon: Unlock },
+  { name: 'Retirada 2 Etapas', href: '/admin/consultas?tipo=retirada_duas_etapas', icon: MoreHorizontal },
 ]
 
 // Grupo: Conteúdo
@@ -117,6 +158,12 @@ export function AdminSidebar() {
       </div>
       <nav className="flex flex-1 flex-col">
         <SidebarGroup title="Consultas" items={consultationGroup} defaultOpen={true} />
+        
+        {/* INSS/CNIS Subgroups */}
+        <SidebarGroup title="Extratos CNIS" items={extratosCnisGroup} defaultOpen={false} />
+        <SidebarGroup title="Documentos INSS" items={documentosINSSGroup} defaultOpen={false} />
+        <SidebarGroup title="Outros Serviços INSS" items={outrosServicosINSSGroup} defaultOpen={false} />
+        
         <SidebarGroup title="Conteúdo" items={contentGroup} defaultOpen={false} />
         <SidebarGroup title="Sistema" items={settingsGroup} defaultOpen={false} />
       </nav>
