@@ -6,6 +6,24 @@
  * construtor visual de landing pages.
  */
 
+// Store
+export { DesignerProvider, useDesigner } from './store'
+
+// Utils
+export {
+  generateId,
+  hexToRgb,
+  rgbToHex,
+  deepClone,
+  debounce,
+  saveToLocalStorage,
+  loadFromLocalStorage,
+  removeFromLocalStorage,
+  DESIGNER_STORAGE_KEY,
+  AUTO_SAVE_INTERVAL,
+  MAX_HISTORY_SIZE,
+} from './utils'
+
 // Types
 export type {
   ElementType,

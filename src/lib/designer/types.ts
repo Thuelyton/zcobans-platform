@@ -294,7 +294,7 @@ export type DesignerAction =
 
   // Saving
   | { type: 'SET_SAVING'; payload: boolean }
-  | { type: 'SET_UNSAVED'; payload: boolean }
+  | { type: 'SET_UNSAVED'; payload: boolean };
 
 // ============================================================================
 // TEMPLATE TYPES
