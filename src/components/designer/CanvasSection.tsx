@@ -5,9 +5,10 @@
  * ZCobans Visual Designer
  *
  * Renderiza uma seção no canvas com seus elementos.
- * Permite seleção, movimentação e remoção.
+ * Permite seleção, movimentação, remoção e Drag & Drop.
  */
 
+import { useCallback } from 'react'
 import { clsx } from 'clsx'
 import { useDesigner } from '@/lib/designer/store'
 import { SectionOverlay } from './SectionOverlay'
@@ -17,9 +18,22 @@ import type { DesignerSection } from '@/lib/designer/types'
 interface CanvasSectionProps {
   section: DesignerSection
   isSelected: boolean
+  isDragged?: boolean
+  onDragStart?: (sectionId: string) => void
+  onDragEnd?: () => void
+  onDragOver?: (e: React.DragEvent) => void
+  index?: number
 }
 
-export function CanvasSection({ section, isSelected }: CanvasSectionProps) {
+export function CanvasSection({ 
+  section, 
+  isSelected, 
+  isDragged = false,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  index
+}: CanvasSectionProps) {
   const { state, selectSection, deselectAll } = useDesigner()
   const { selectedElementId } = state
 
@@ -33,6 +47,28 @@ export function CanvasSection({ section, isSelected }: CanvasSectionProps) {
       deselectAll()
     }
   }
+
+  // Drag handlers
+  const handleDragStart = useCallback((e: React.DragEvent) => {
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', section.id)
+    
+    // Set drag image with some opacity
+    if (e.currentTarget instanceof HTMLElement) {
+      e.dataTransfer.setDragImage(e.currentTarget, 0, 0)
+    }
+    
+    onDragStart?.(section.id)
+  }, [section.id, onDragStart])
+
+  const handleDragEnd = useCallback(() => {
+    onDragEnd?.()
+  }, [onDragEnd])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    onDragOver?.(e)
+  }, [onDragOver])
 
   // Build inline styles from section styles
   const sectionStyle: React.CSSProperties = {
@@ -48,16 +84,25 @@ export function CanvasSection({ section, isSelected }: CanvasSectionProps) {
   return (
     <div
       className={clsx(
-        'relative group cursor-pointer transition-all duration-200',
-        isSelected && 'ring-2 ring-emerald-500 ring-inset'
+        'relative group transition-all duration-200',
+        isSelected && 'ring-2 ring-emerald-500 ring-inset',
+        isDragged && 'opacity-50 scale-[0.98]',
+        !isDragged && 'cursor-pointer'
       )}
       style={sectionStyle}
       onClick={handleSelect}
+      draggable={!isDragged}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      data-section-id={section.id}
+      data-section-index={index}
     >
       {/* Section overlay with controls */}
       <SectionOverlay
         section={section}
         isSelected={isSelected}
+        isDragged={isDragged}
       />
 
       {/* Section content */}

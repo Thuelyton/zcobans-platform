@@ -199,6 +199,37 @@ function designerReducer(state: DesignerState, action: DesignerAction): Designer
       }
     }
 
+    case 'REORDER_SECTION': {
+      const { sectionId, targetIndex } = action.payload
+      const sections = [...state.page.sections]
+      const sourceIndex = sections.findIndex((s) => s.id === sectionId)
+
+      if (sourceIndex === -1 || targetIndex < 0 || targetIndex >= sections.length) {
+        return state
+      }
+
+      // Remove section from source
+      const [movedSection] = sections.splice(sourceIndex, 1)
+
+      // Insert at target position
+      sections.splice(targetIndex, 0, movedSection)
+
+      // Reorder all sections
+      const reorderedSections = sections.map((s, i) => ({
+        ...s,
+        order: i,
+      }))
+
+      return {
+        ...state,
+        page: {
+          ...state.page,
+          sections: reorderedSections,
+        },
+        hasUnsavedChanges: true,
+      }
+    }
+
     // ========================================================================
     // ELEMENT ACTIONS
     // ========================================================================
@@ -443,6 +474,7 @@ interface DesignerContextValue {
   updateSection: (sectionId: string, updates: Partial<DesignerSection>) => void
   updateSectionStyles: (sectionId: string, styles: Partial<SectionStyles>) => void
   moveSection: (sectionId: string, direction: 'up' | 'down') => void
+  reorderSection: (sectionId: string, targetIndex: number) => void
 
   addElement: (sectionId: string, element: DesignerElement) => void
   removeElement: (sectionId: string, elementId: string) => void
@@ -619,6 +651,11 @@ export function DesignerProvider({ children, initialPage }: DesignerProviderProp
     dispatch({ type: 'MOVE_SECTION', payload: { sectionId, direction } })
   }, [dispatch, state.page])
 
+  const reorderSection = useCallback((sectionId: string, targetIndex: number) => {
+    dispatch({ type: 'PUSH_HISTORY', payload: state.page })
+    dispatch({ type: 'REORDER_SECTION', payload: { sectionId, targetIndex } })
+  }, [dispatch, state.page])
+
   const addElement = useCallback((sectionId: string, element: DesignerElement) => {
     dispatch({ type: 'PUSH_HISTORY', payload: state.page })
     dispatch({ type: 'ADD_ELEMENT', payload: { sectionId, element } })
@@ -694,6 +731,7 @@ export function DesignerProvider({ children, initialPage }: DesignerProviderProp
     updateSection,
     updateSectionStyles,
     moveSection,
+    reorderSection,
     addElement,
     removeElement,
     updateElement,

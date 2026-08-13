@@ -271,6 +271,7 @@ export type DesignerAction =
   | { type: 'UPDATE_SECTION'; payload: { sectionId: string; updates: Partial<DesignerSection> } }
   | { type: 'UPDATE_SECTION_STYLES'; payload: { sectionId: string; styles: Partial<SectionStyles> } }
   | { type: 'MOVE_SECTION'; payload: { sectionId: string; direction: 'up' | 'down' } }
+  | { type: 'REORDER_SECTION'; payload: { sectionId: string; targetIndex: number } }
 
   // Element actions
   | { type: 'ADD_ELEMENT'; payload: { sectionId: string; element: DesignerElement; index?: number } }

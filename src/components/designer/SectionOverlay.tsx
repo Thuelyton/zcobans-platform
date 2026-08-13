@@ -6,6 +6,7 @@
  *
  * Overlay com controles para cada seção no canvas.
  * Aparece ao hover ou quando a seção está selecionada.
+ * Inclui drag handle para reordenação.
  */
 
 import { clsx } from 'clsx'
@@ -21,9 +22,10 @@ import type { DesignerSection } from '@/lib/designer/types'
 interface SectionOverlayProps {
   section: DesignerSection
   isSelected: boolean
+  isDragged?: boolean
 }
 
-export function SectionOverlay({ section, isSelected }: SectionOverlayProps) {
+export function SectionOverlay({ section, isSelected, isDragged = false }: SectionOverlayProps) {
   const { state, moveSection, removeSection } = useDesigner()
   const { page } = state
 
@@ -52,14 +54,22 @@ export function SectionOverlay({ section, isSelected }: SectionOverlayProps) {
     <div
       className={clsx(
         'absolute inset-0 z-20 transition-opacity duration-200',
-        isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'
+        isSelected ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+        isDragged && 'opacity-30'
       )}
     >
-      {/* Section label */}
+      {/* Section label with drag handle */}
       <div className="absolute top-2 left-2 flex items-center gap-1">
-        <div className="flex items-center gap-1.5 rounded-md bg-slate-900/90 px-2 py-1 text-xs text-slate-300 backdrop-blur-sm">
+        <div 
+          className={clsx(
+            "flex items-center gap-1.5 rounded-md bg-slate-900/90 px-2 py-1 text-xs text-slate-300 backdrop-blur-sm",
+            !isDragged && "cursor-grab active:cursor-grabbing"
+          )}
+          title="Arraste para reordenar"
+        >
           <GripVertical className="h-3 w-3 text-slate-500" />
           <span>{section.title}</span>
+          <span className="text-slate-500 ml-1">#{sectionIndex + 1}</span>
         </div>
       </div>
 
