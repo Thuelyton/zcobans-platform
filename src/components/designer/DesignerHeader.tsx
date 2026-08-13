@@ -8,7 +8,7 @@
  */
 
 import Link from 'next/link'
-import { ArrowLeft, Layers } from 'lucide-react'
+import { ArrowLeft, Layers, FolderOpen } from 'lucide-react'
 import { DesignerToolbar } from './DesignerToolbar'
 import { ExportMenu } from './ExportMenu'
 
@@ -38,6 +38,14 @@ export function DesignerHeader() {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
+        <Link
+          href="/designer/projects"
+          className="flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+          title="Meus Projetos"
+        >
+          <FolderOpen className="h-3.5 w-3.5" />
+          <span className="hidden sm:inline">Projetos</span>
+        </Link>
         <ExportMenu />
       </div>
     </header>
