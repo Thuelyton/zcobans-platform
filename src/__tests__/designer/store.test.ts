@@ -454,6 +454,290 @@ describe('Designer Store', () => {
     })
   })
 
+  describe('MOVE_ELEMENT_CROSS_SECTION', () => {
+    it('should move element from one section to another', () => {
+      const initialState = createEmptyState()
+      const section1 = createSectionFromTemplate('hero', 0)
+      const section2 = createSectionFromTemplate('cta', 1)
+      
+      let state = designerReducer(initialState, {
+        type: 'ADD_SECTION',
+        payload: { section: section1 },
+      })
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      state = designerReducer(state, {
+        type: 'ADD_SECTION',
+        payload: { section: section2 },
+      })
+      
+      const elementToMove = section1.elements[1] // text from section1
+      const originalElementCount1 = section1.elements.length
+      const originalElementCount2 = section2.elements.length
+      
+      // Push history before move
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      
+      // Move element from section1 to section2
+      state = designerReducer(state, {
+        type: 'MOVE_ELEMENT_CROSS_SECTION',
+        payload: {
+          sourceSectionId: section1.id,
+          targetSectionId: section2.id,
+          elementId: elementToMove.id,
+          targetIndex: 0,
+        },
+      })
+      
+      const updatedSection1 = state.page.sections.find(s => s.id === section1.id)
+      const updatedSection2 = state.page.sections.find(s => s.id === section2.id)
+      
+      // Element should be removed from section1
+      expect(updatedSection1?.elements.length).toBe(originalElementCount1 - 1)
+      expect(updatedSection1?.elements.find(e => e.id === elementToMove.id)).toBeUndefined()
+      
+      // Element should be added to section2
+      expect(updatedSection2?.elements.length).toBe(originalElementCount2 + 1)
+      expect(updatedSection2?.elements[0].id).toBe(elementToMove.id)
+      
+      // Should select the target section and element
+      expect(state.selectedSectionId).toBe(section2.id)
+      expect(state.selectedElementId).toBe(elementToMove.id)
+      
+      // Should mark as unsaved
+      expect(state.hasUnsavedChanges).toBe(true)
+    })
+
+    it('should preserve element ID when moving cross-section', () => {
+      const initialState = createEmptyState()
+      const section1 = createSectionFromTemplate('hero', 0)
+      const section2 = createSectionFromTemplate('cta', 1)
+      
+      let state = designerReducer(initialState, {
+        type: 'ADD_SECTION',
+        payload: { section: section1 },
+      })
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      state = designerReducer(state, {
+        type: 'ADD_SECTION',
+        payload: { section: section2 },
+      })
+      
+      const elementToMove = section1.elements[0]
+      const originalId = elementToMove.id
+      
+      // Push history before move
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      
+      // Move element
+      state = designerReducer(state, {
+        type: 'MOVE_ELEMENT_CROSS_SECTION',
+        payload: {
+          sourceSectionId: section1.id,
+          targetSectionId: section2.id,
+          elementId: elementToMove.id,
+          targetIndex: 0,
+        },
+      })
+      
+      const updatedSection2 = state.page.sections.find(s => s.id === section2.id)
+      const movedElement = updatedSection2?.elements.find(e => e.id === originalId)
+      
+      // ID should be preserved
+      expect(movedElement).toBeDefined()
+      expect(movedElement?.id).toBe(originalId)
+    })
+
+    it('should not duplicate element when moving cross-section', () => {
+      const initialState = createEmptyState()
+      const section1 = createSectionFromTemplate('hero', 0)
+      const section2 = createSectionFromTemplate('cta', 1)
+      
+      let state = designerReducer(initialState, {
+        type: 'ADD_SECTION',
+        payload: { section: section1 },
+      })
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      state = designerReducer(state, {
+        type: 'ADD_SECTION',
+        payload: { section: section2 },
+      })
+      
+      const elementToMove = section1.elements[0]
+      
+      // Push history before move
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      
+      // Move element
+      state = designerReducer(state, {
+        type: 'MOVE_ELEMENT_CROSS_SECTION',
+        payload: {
+          sourceSectionId: section1.id,
+          targetSectionId: section2.id,
+          elementId: elementToMove.id,
+          targetIndex: 0,
+        },
+      })
+      
+      // Count all occurrences of the element ID across all sections
+      const allElementIds = state.page.sections.flatMap(s => s.elements.map(e => e.id))
+      const occurrences = allElementIds.filter(id => id === elementToMove.id).length
+      
+      // Should only appear once
+      expect(occurrences).toBe(1)
+    })
+
+    it('should handle undo after cross-section move', () => {
+      const initialState = createEmptyState()
+      const section1 = createSectionFromTemplate('hero', 0)
+      const section2 = createSectionFromTemplate('cta', 1)
+      
+      let state = designerReducer(initialState, {
+        type: 'ADD_SECTION',
+        payload: { section: section1 },
+      })
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      state = designerReducer(state, {
+        type: 'ADD_SECTION',
+        payload: { section: section2 },
+      })
+      
+      const elementToMove = section1.elements[0]
+      const originalSection1Count = section1.elements.length
+      const originalSection2Count = section2.elements.length
+      
+      // Push history before move
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      
+      // Move element
+      state = designerReducer(state, {
+        type: 'MOVE_ELEMENT_CROSS_SECTION',
+        payload: {
+          sourceSectionId: section1.id,
+          targetSectionId: section2.id,
+          elementId: elementToMove.id,
+          targetIndex: 0,
+        },
+      })
+      
+      // Verify move happened
+      expect(state.page.sections.find(s => s.id === section1.id)?.elements.find(e => e.id === elementToMove.id)).toBeUndefined()
+      expect(state.page.sections.find(s => s.id === section2.id)?.elements.find(e => e.id === elementToMove.id)).toBeDefined()
+      
+      // Undo
+      state = designerReducer(state, { type: 'UNDO' })
+      
+      // After undo, element should be back in section1
+      expect(state.page.sections.find(s => s.id === section1.id)?.elements.length).toBe(originalSection1Count)
+    })
+
+    it('should mark as unsaved after cross-section move', () => {
+      const initialState = createEmptyState()
+      const section1 = createSectionFromTemplate('hero', 0)
+      const section2 = createSectionFromTemplate('cta', 1)
+      
+      let state = designerReducer(initialState, {
+        type: 'ADD_SECTION',
+        payload: { section: section1 },
+      })
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      state = designerReducer(state, {
+        type: 'ADD_SECTION',
+        payload: { section: section2 },
+      })
+      
+      const elementToMove = section1.elements[0]
+      
+      // Push history before move
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      
+      // Move element
+      state = designerReducer(state, {
+        type: 'MOVE_ELEMENT_CROSS_SECTION',
+        payload: {
+          sourceSectionId: section1.id,
+          targetSectionId: section2.id,
+          elementId: elementToMove.id,
+          targetIndex: 0,
+        },
+      })
+      
+      // Should mark as unsaved
+      expect(state.hasUnsavedChanges).toBe(true)
+    })
+
+    it('should ignore invalid source section', () => {
+      const initialState = createEmptyState()
+      const section1 = createSectionFromTemplate('hero', 0)
+      const section2 = createSectionFromTemplate('cta', 1)
+      
+      let state = designerReducer(initialState, {
+        type: 'ADD_SECTION',
+        payload: { section: section1 },
+      })
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      state = designerReducer(state, {
+        type: 'ADD_SECTION',
+        payload: { section: section2 },
+      })
+      
+      const originalCounts = state.page.sections.map(s => s.elements.length)
+      
+      // Push history before move
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      
+      // Try to move with invalid source section
+      state = designerReducer(state, {
+        type: 'MOVE_ELEMENT_CROSS_SECTION',
+        payload: {
+          sourceSectionId: 'invalid-id',
+          targetSectionId: section2.id,
+          elementId: section1.elements[0].id,
+          targetIndex: 0,
+        },
+      })
+      
+      // Nothing should change
+      const newCounts = state.page.sections.map(s => s.elements.length)
+      expect(newCounts).toEqual(originalCounts)
+    })
+  })
+
   describe('SELECT_SECTION', () => {
     it('should select a section', () => {
       const initialState = createEmptyState()

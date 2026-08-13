@@ -6,7 +6,7 @@
  *
  * Renderiza uma seção no canvas com seus elementos.
  * Permite seleção, movimentação, remoção e Drag & Drop.
- * Suporta Drag & Drop de elementos dentro da seção.
+ * Suporta Drag & Drop de elementos dentro da seção e entre seções.
  */
 
 import { useState, useCallback } from 'react'
@@ -35,11 +35,12 @@ export function CanvasSection({
   onDragOver,
   index
 }: CanvasSectionProps) {
-  const { state, selectSection, deselectAll, moveElement } = useDesigner()
+  const { state, selectSection, deselectAll, moveElement, moveElementCrossSection } = useDesigner()
   const { selectedElementId } = state
 
   // Element drag & drop state
   const [draggedElementId, setDraggedElementId] = useState<string | null>(null)
+  const [draggedElementSectionId, setDraggedElementSectionId] = useState<string | null>(null)
   const [elementDropTargetIndex, setElementDropTargetIndex] = useState<number | null>(null)
   const [isElementDragOver, setIsElementDragOver] = useState(false)
 
@@ -79,10 +80,12 @@ export function CanvasSection({
   // Element drag handlers
   const handleElementDragStart = useCallback((elementId: string) => {
     setDraggedElementId(elementId)
-  }, [])
+    setDraggedElementSectionId(section.id)
+  }, [section.id])
 
   const handleElementDragEnd = useCallback(() => {
     setDraggedElementId(null)
+    setDraggedElementSectionId(null)
     setElementDropTargetIndex(null)
     setIsElementDragOver(false)
   }, [])
@@ -118,8 +121,20 @@ export function CanvasSection({
     e.preventDefault()
     e.stopPropagation() // Prevent section drop
     
-    if (draggedElementId && elementDropTargetIndex !== null) {
-      // Get source index
+    if (!draggedElementId || elementDropTargetIndex === null) return
+    
+    const isCrossSection = draggedElementSectionId && draggedElementSectionId !== section.id
+    
+    if (isCrossSection && draggedElementSectionId) {
+      // Cross-section drop
+      moveElementCrossSection(
+        draggedElementSectionId,
+        section.id,
+        draggedElementId,
+        elementDropTargetIndex
+      )
+    } else {
+      // Same-section drop
       const sourceIndex = section.elements.findIndex(el => el.id === draggedElementId)
       
       if (sourceIndex !== -1 && sourceIndex !== elementDropTargetIndex) {
@@ -133,9 +148,38 @@ export function CanvasSection({
     }
     
     setDraggedElementId(null)
+    setDraggedElementSectionId(null)
     setElementDropTargetIndex(null)
     setIsElementDragOver(false)
-  }, [draggedElementId, elementDropTargetIndex, section.id, section.elements, moveElement])
+  }, [draggedElementId, draggedElementSectionId, elementDropTargetIndex, section.id, section.elements, moveElement, moveElementCrossSection])
+
+  // Handle drop on empty section
+  const handleEmptySectionDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    
+    if (!draggedElementId || !draggedElementSectionId) return
+    
+    const isCrossSection = draggedElementSectionId !== section.id
+    
+    if (isCrossSection) {
+      // Cross-section drop to empty section
+      moveElementCrossSection(
+        draggedElementSectionId,
+        section.id,
+        draggedElementId,
+        0
+      )
+    } else {
+      // Same-section drop to empty section (shouldn't happen, but handle gracefully)
+      moveElement(section.id, draggedElementId, 0)
+    }
+    
+    setDraggedElementId(null)
+    setDraggedElementSectionId(null)
+    setElementDropTargetIndex(null)
+    setIsElementDragOver(false)
+  }, [draggedElementId, draggedElementSectionId, section.id, moveElement, moveElementCrossSection])
 
   // Build inline styles from section styles
   const sectionStyle: React.CSSProperties = {
@@ -192,7 +236,7 @@ export function CanvasSection({
               setElementDropTargetIndex(0)
             }}
             onDragLeave={handleElementDragLeave}
-            onDrop={handleElementDrop}
+            onDrop={handleEmptySectionDrop}
           >
             <p className="text-sm text-slate-400/70">
               {isElementDragOver ? 'Solte aqui para adicionar o elemento' : 'Clique para adicionar elementos ou selecione um tipo de elemento no painel'}
@@ -219,6 +263,7 @@ export function CanvasSection({
                 setElementDropTargetIndex(0)
                 setIsElementDragOver(true)
               }}
+              onDrop={handleElementDrop}
             />
 
             {section.elements.map((element, elIndex) => (
@@ -235,6 +280,7 @@ export function CanvasSection({
                   isSelected={selectedElementId === element.id}
                   alignment={section.styles.alignment}
                   isDragged={draggedElementId === element.id}
+                  isBeingDraggedFromOtherSection={draggedElementId === element.id && draggedElementSectionId !== section.id}
                   onDragStart={handleElementDragStart}
                   onDragEnd={handleElementDragEnd}
                   onDragOver={(e) => handleElementDragOver(e, elIndex)}

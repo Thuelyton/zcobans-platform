@@ -20,6 +20,7 @@ interface CanvasElementProps {
   isSelected: boolean
   alignment?: Alignment
   isDragged?: boolean
+  isBeingDraggedFromOtherSection?: boolean
   onDragStart?: (elementId: string) => void
   onDragEnd?: () => void
   onDragOver?: (e: React.DragEvent) => void
@@ -51,6 +52,7 @@ export function CanvasElement({
   isSelected, 
   alignment,
   isDragged = false,
+  isBeingDraggedFromOtherSection = false,
   onDragStart,
   onDragEnd,
   onDragOver,
@@ -579,6 +581,7 @@ export function CanvasElement({
         'relative group/element rounded-lg transition-all duration-200',
         isSelected && !isEditing && 'ring-2 ring-emerald-500 ring-inset bg-emerald-500/5',
         isDragged && 'opacity-50 scale-[0.98]',
+        isBeingDraggedFromOtherSection && 'opacity-30 border-2 border-dashed border-emerald-500/50',
         isEditing && 'ring-2 ring-emerald-500 ring-inset',
         !isDragged && !isEditing && 'cursor-pointer'
       )}

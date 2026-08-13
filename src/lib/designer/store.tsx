@@ -401,6 +401,53 @@ function designerReducer(state: DesignerState, action: DesignerAction): Designer
       }
     }
 
+    case 'MOVE_ELEMENT_CROSS_SECTION': {
+      const { sourceSectionId, targetSectionId, elementId, targetIndex } = action.payload
+      
+      // Find the element in source section
+      const sourceSection = state.page.sections.find(s => s.id === sourceSectionId)
+      if (!sourceSection) return state
+      
+      const elementToMove = sourceSection.elements.find(e => e.id === elementId)
+      if (!elementToMove) return state
+      
+      // Check if source and target are the same (shouldn't happen, but just in case)
+      if (sourceSectionId === targetSectionId) return state
+      
+      const sections = state.page.sections.map(s => {
+        if (s.id === sourceSectionId) {
+          // Remove element from source
+          const newElements = s.elements
+            .filter(e => e.id !== elementId)
+            .map((e, i) => ({ ...e, order: i }))
+          return { ...s, elements: newElements }
+        }
+        
+        if (s.id === targetSectionId) {
+          // Add element to target
+          const newElements = [...s.elements]
+          const insertIndex = Math.min(targetIndex, newElements.length)
+          newElements.splice(insertIndex, 0, { ...elementToMove, order: insertIndex })
+          // Reorder all elements
+          const reorderedElements = newElements.map((e, i) => ({ ...e, order: i }))
+          return { ...s, elements: reorderedElements }
+        }
+        
+        return s
+      })
+      
+      return {
+        ...state,
+        page: {
+          ...state.page,
+          sections,
+        },
+        selectedSectionId: targetSectionId,
+        selectedElementId: elementId,
+        hasUnsavedChanges: true,
+      }
+    }
+
     // ========================================================================
     // SELECTION ACTIONS
     // ========================================================================
@@ -547,6 +594,7 @@ interface DesignerContextValue {
   updateElementProps: (sectionId: string, elementId: string, props: Partial<ElementProps>) => void
   updateElementStyles: (sectionId: string, elementId: string, styles: Partial<ElementStyles>) => void
   moveElement: (sectionId: string, elementId: string, targetIndex: number) => void
+  moveElementCrossSection: (sourceSectionId: string, targetSectionId: string, elementId: string, targetIndex: number) => void
 
   selectSection: (sectionId: string | null) => void
   selectElement: (sectionId: string, elementId: string | null) => void
@@ -773,6 +821,11 @@ export function DesignerProvider({ children, initialPage }: DesignerProviderProp
     dispatch({ type: 'MOVE_ELEMENT', payload: { sectionId, elementId, targetIndex } })
   }, [dispatch, state.page])
 
+  const moveElementCrossSection = useCallback((sourceSectionId: string, targetSectionId: string, elementId: string, targetIndex: number) => {
+    dispatch({ type: 'PUSH_HISTORY', payload: state.page })
+    dispatch({ type: 'MOVE_ELEMENT_CROSS_SECTION', payload: { sourceSectionId, targetSectionId, elementId, targetIndex } })
+  }, [dispatch, state.page])
+
   const selectSection = useCallback((sectionId: string | null) => {
     dispatch({ type: 'SELECT_SECTION', payload: { sectionId } })
   }, [dispatch])
@@ -874,6 +927,7 @@ export function DesignerProvider({ children, initialPage }: DesignerProviderProp
     updateElementProps,
     updateElementStyles,
     moveElement,
+    moveElementCrossSection,
     selectSection,
     selectElement,
     deselectAll,
