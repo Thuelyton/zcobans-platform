@@ -594,6 +594,50 @@ export interface Database {
           },
         ]
       }
+      designer_projects: {
+        Row: {
+          id: string
+          user_id: string
+          name: string
+          slug: string
+          description: string | null
+          page_data: Json
+          published: boolean | null
+          created_at: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          name: string
+          slug: string
+          description?: string | null
+          page_data: Json
+          published?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          name?: string
+          slug?: string
+          description?: string | null
+          page_data?: Json
+          published?: boolean | null
+          created_at?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'designer_projects_user_id_fkey'
+            columns: ['user_id']
+            isOneToOne: false
+            referencedRelation: 'users'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
