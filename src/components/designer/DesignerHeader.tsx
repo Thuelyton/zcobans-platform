@@ -10,6 +10,7 @@
 import Link from 'next/link'
 import { ArrowLeft, Layers } from 'lucide-react'
 import { DesignerToolbar } from './DesignerToolbar'
+import { ExportMenu } from './ExportMenu'
 
 export function DesignerHeader() {
   return (
@@ -37,7 +38,7 @@ export function DesignerHeader() {
 
       {/* Right: Actions */}
       <div className="flex items-center gap-2">
-        {/* Placeholder for future actions */}
+        <ExportMenu />
       </div>
     </header>
   )
