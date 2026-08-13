@@ -360,6 +360,44 @@ function designerReducer(state: DesignerState, action: DesignerAction): Designer
       }
     }
 
+    case 'MOVE_ELEMENT': {
+      const { sectionId, elementId, targetIndex } = action.payload
+      
+      const sections = state.page.sections.map((s) => {
+        if (s.id !== sectionId) return s
+
+        const elements = [...s.elements]
+        const sourceIndex = elements.findIndex((e) => e.id === elementId)
+
+        if (sourceIndex === -1 || targetIndex < 0 || targetIndex >= elements.length) {
+          return s
+        }
+
+        // Remove element from source
+        const [movedElement] = elements.splice(sourceIndex, 1)
+
+        // Insert at target position
+        elements.splice(targetIndex, 0, movedElement)
+
+        // Reorder all elements
+        const reorderedElements = elements.map((e, i) => ({
+          ...e,
+          order: i,
+        }))
+
+        return { ...s, elements: reorderedElements }
+      })
+
+      return {
+        ...state,
+        page: {
+          ...state.page,
+          sections,
+        },
+        hasUnsavedChanges: true,
+      }
+    }
+
     // ========================================================================
     // SELECTION ACTIONS
     // ========================================================================
@@ -481,6 +519,7 @@ interface DesignerContextValue {
   updateElement: (sectionId: string, elementId: string, updates: Partial<DesignerElement>) => void
   updateElementProps: (sectionId: string, elementId: string, props: Partial<ElementProps>) => void
   updateElementStyles: (sectionId: string, elementId: string, styles: Partial<ElementStyles>) => void
+  moveElement: (sectionId: string, elementId: string, targetIndex: number) => void
 
   selectSection: (sectionId: string | null) => void
   selectElement: (sectionId: string, elementId: string | null) => void
@@ -681,6 +720,11 @@ export function DesignerProvider({ children, initialPage }: DesignerProviderProp
     dispatch({ type: 'UPDATE_ELEMENT_STYLES', payload: { sectionId, elementId, styles } })
   }, [dispatch, state.page])
 
+  const moveElement = useCallback((sectionId: string, elementId: string, targetIndex: number) => {
+    dispatch({ type: 'PUSH_HISTORY', payload: state.page })
+    dispatch({ type: 'MOVE_ELEMENT', payload: { sectionId, elementId, targetIndex } })
+  }, [dispatch, state.page])
+
   const selectSection = useCallback((sectionId: string | null) => {
     dispatch({ type: 'SELECT_SECTION', payload: { sectionId } })
   }, [dispatch])
@@ -737,6 +781,7 @@ export function DesignerProvider({ children, initialPage }: DesignerProviderProp
     updateElement,
     updateElementProps,
     updateElementStyles,
+    moveElement,
     selectSection,
     selectElement,
     deselectAll,

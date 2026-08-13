@@ -363,6 +363,97 @@ describe('Designer Store', () => {
     })
   })
 
+  describe('MOVE_ELEMENT', () => {
+    it('should move element to target index', () => {
+      const initialState = createEmptyState()
+      const section = createSectionFromTemplate('hero', 0)
+      
+      let state = designerReducer(initialState, {
+        type: 'ADD_SECTION',
+        payload: { section },
+      })
+      
+      const element1 = section.elements[0] // heading
+      const element2 = section.elements[1] // text
+      const element3 = section.elements[2] // button
+      
+      // Push history before move
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      
+      // Move element3 (button) to index 0 (first position)
+      state = designerReducer(state, {
+        type: 'MOVE_ELEMENT',
+        payload: { sectionId: section.id, elementId: element3.id, targetIndex: 0 },
+      })
+      
+      const updatedSection = state.page.sections.find((s) => s.id === section.id)
+      expect(updatedSection?.elements[0].id).toBe(element3.id)
+      expect(updatedSection?.elements[1].id).toBe(element1.id)
+      expect(updatedSection?.elements[2].id).toBe(element2.id)
+      expect(updatedSection?.elements[0].order).toBe(0)
+      expect(updatedSection?.elements[1].order).toBe(1)
+      expect(updatedSection?.elements[2].order).toBe(2)
+    })
+
+    it('should not change order when dropping at same position', () => {
+      const initialState = createEmptyState()
+      const section = createSectionFromTemplate('hero', 0)
+      
+      let state = designerReducer(initialState, {
+        type: 'ADD_SECTION',
+        payload: { section },
+      })
+      
+      const element1 = section.elements[0]
+      
+      // Push history before move
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      
+      // Move element1 to index 0 (same position)
+      state = designerReducer(state, {
+        type: 'MOVE_ELEMENT',
+        payload: { sectionId: section.id, elementId: element1.id, targetIndex: 0 },
+      })
+      
+      const updatedSection = state.page.sections.find((s) => s.id === section.id)
+      expect(updatedSection?.elements[0].id).toBe(element1.id)
+    })
+
+    it('should ignore invalid target index', () => {
+      const initialState = createEmptyState()
+      const section = createSectionFromTemplate('hero', 0)
+      
+      let state = designerReducer(initialState, {
+        type: 'ADD_SECTION',
+        payload: { section },
+      })
+      
+      const element1 = section.elements[0]
+      const originalOrder = section.elements.map(e => e.id)
+      
+      // Push history before move
+      state = designerReducer(state, {
+        type: 'PUSH_HISTORY',
+        payload: state.page,
+      })
+      
+      // Try to move to invalid index
+      state = designerReducer(state, {
+        type: 'MOVE_ELEMENT',
+        payload: { sectionId: section.id, elementId: element1.id, targetIndex: 10 },
+      })
+      
+      const updatedSection = state.page.sections.find((s) => s.id === section.id)
+      expect(updatedSection?.elements.map(e => e.id)).toEqual(originalOrder)
+    })
+  })
+
   describe('SELECT_SECTION', () => {
     it('should select a section', () => {
       const initialState = createEmptyState()

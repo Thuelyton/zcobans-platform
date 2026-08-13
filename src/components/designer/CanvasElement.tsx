@@ -5,11 +5,13 @@
  * ZCobans Visual Designer
  *
  * Renderiza um elemento no canvas (heading, text, button, image).
- * Permite seleção e edição inline.
+ * Permite seleção, edição e Drag & Drop dentro da seção.
  */
 
+import { useCallback } from 'react'
 import { clsx } from 'clsx'
 import { useDesigner } from '@/lib/designer/store'
+import { GripVertical } from 'lucide-react'
 import type { DesignerElement, Alignment } from '@/lib/designer/types'
 
 interface CanvasElementProps {
@@ -17,15 +19,54 @@ interface CanvasElementProps {
   sectionId: string
   isSelected: boolean
   alignment?: Alignment
+  isDragged?: boolean
+  onDragStart?: (elementId: string) => void
+  onDragEnd?: () => void
+  onDragOver?: (e: React.DragEvent) => void
+  index?: number
 }
 
-export function CanvasElement({ element, sectionId, isSelected, alignment }: CanvasElementProps) {
+export function CanvasElement({ 
+  element, 
+  sectionId, 
+  isSelected, 
+  alignment,
+  isDragged = false,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  index
+}: CanvasElementProps) {
   const { selectElement } = useDesigner()
 
   const handleSelect = (e: React.MouseEvent) => {
     e.stopPropagation()
     selectElement(sectionId, element.id)
   }
+
+  // Drag handlers
+  const handleDragStart = useCallback((e: React.DragEvent) => {
+    e.stopPropagation() // Prevent section drag
+    e.dataTransfer.effectAllowed = 'move'
+    e.dataTransfer.setData('text/plain', element.id)
+    
+    // Set drag image with some opacity
+    if (e.currentTarget instanceof HTMLElement) {
+      e.dataTransfer.setDragImage(e.currentTarget, 0, 0)
+    }
+    
+    onDragStart?.(element.id)
+  }, [element.id, onDragStart])
+
+  const handleDragEnd = useCallback(() => {
+    onDragEnd?.()
+  }, [onDragEnd])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    onDragOver?.(e)
+  }, [onDragOver])
 
   // Build inline styles from element styles
   const elementStyle: React.CSSProperties = {}
@@ -188,11 +229,38 @@ export function CanvasElement({ element, sectionId, isSelected, alignment }: Can
   return (
     <div
       className={clsx(
-        'relative cursor-pointer transition-all duration-200 rounded-lg',
-        isSelected && 'ring-2 ring-emerald-500 ring-inset bg-emerald-500/5'
+        'relative group/element rounded-lg transition-all duration-200',
+        isSelected && 'ring-2 ring-emerald-500 ring-inset bg-emerald-500/5',
+        isDragged && 'opacity-50 scale-[0.98]',
+        !isDragged && 'cursor-pointer'
       )}
       onClick={handleSelect}
+      draggable={!isDragged}
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
+      onDragOver={handleDragOver}
+      data-element-id={element.id}
+      data-element-index={index}
     >
+      {/* Drag handle - visible on hover */}
+      <div 
+        className={clsx(
+          "absolute -left-8 top-1/2 -translate-y-1/2 transition-opacity duration-200",
+          "opacity-0 group-hover/element:opacity-100",
+          isDragged && "opacity-100"
+        )}
+      >
+        <div 
+          className={clsx(
+            "flex items-center justify-center w-6 h-6 rounded bg-slate-800/90 text-slate-400",
+            !isDragged && "cursor-grab active:cursor-grabbing hover:bg-slate-700 hover:text-white"
+          )}
+          title="Arraste para reordenar"
+        >
+          <GripVertical className="h-4 w-4" />
+        </div>
+      </div>
+
       {/* Element content */}
       {renderElement()}
 

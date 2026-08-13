@@ -279,6 +279,7 @@ export type DesignerAction =
   | { type: 'UPDATE_ELEMENT'; payload: { sectionId: string; elementId: string; updates: Partial<DesignerElement> } }
   | { type: 'UPDATE_ELEMENT_PROPS'; payload: { sectionId: string; elementId: string; props: Partial<ElementProps> } }
   | { type: 'UPDATE_ELEMENT_STYLES'; payload: { sectionId: string; elementId: string; styles: Partial<ElementStyles> } }
+  | { type: 'MOVE_ELEMENT'; payload: { sectionId: string; elementId: string; targetIndex: number } }
 
   // Selection actions
   | { type: 'SELECT_SECTION'; payload: { sectionId: string | null } }
