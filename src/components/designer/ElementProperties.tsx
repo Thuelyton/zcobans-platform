@@ -164,6 +164,339 @@ export function ElementProperties({ element, sectionId }: ElementPropertiesProps
             </div>
           </div>
         )}
+
+        {/* Video properties */}
+        {element.type === 'video' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">URL do Vídeo</label>
+              <input
+                type="url"
+                value={(element.props as { url: string }).url}
+                onChange={(e) => handlePropsChange('url', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+                placeholder="https://..."
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">URL do Poster</label>
+              <input
+                type="url"
+                value={(element.props as { poster?: string }).poster || ''}
+                onChange={(e) => handlePropsChange('poster', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+                placeholder="https://..."
+              />
+            </div>
+            <div className="flex gap-4">
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={(element.props as { controls?: boolean }).controls !== false}
+                  onChange={(e) => handlePropsChange('controls', String(e.target.checked))}
+                  className="rounded border-slate-700 bg-[#111827] text-emerald-500 focus:ring-emerald-500"
+                />
+                <span className="text-xs text-slate-400">Controles</span>
+              </label>
+              <label className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={(element.props as { muted?: boolean }).muted || false}
+                  onChange={(e) => handlePropsChange('muted', String(e.target.checked))}
+                  className="rounded border-slate-700 bg-[#111827] text-emerald-500 focus:ring-emerald-500"
+                />
+                <span className="text-xs text-slate-400">Mudo</span>
+              </label>
+            </div>
+          </div>
+        )}
+
+        {/* Divider properties */}
+        {element.type === 'divider' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Espessura</label>
+              <input
+                type="text"
+                value={(element.props as { thickness?: string }).thickness || '1px'}
+                onChange={(e) => handlePropsChange('thickness', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+                placeholder="1px"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Largura</label>
+              <input
+                type="text"
+                value={(element.props as { width?: string }).width || '100%'}
+                onChange={(e) => handlePropsChange('width', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+                placeholder="100%"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Estilo</label>
+              <select
+                value={(element.props as { style?: string }).style || 'solid'}
+                onChange={(e) => handlePropsChange('style', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="solid">Sólido</option>
+                <option value="dashed">Tracejado</option>
+                <option value="dotted">Pontilhado</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Cor</label>
+              <input
+                type="color"
+                value={(element.props as { color?: string }).color || '#e2e8f0'}
+                onChange={(e) => handlePropsChange('color', e.target.value)}
+                className="h-8 w-full rounded-lg border border-slate-700 bg-[#111827]"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Spacer properties */}
+        {element.type === 'spacer' && (
+          <div>
+            <label className="block text-xs text-slate-400 mb-1">Altura</label>
+            <input
+              type="text"
+              value={(element.props as { height?: string }).height || '2rem'}
+              onChange={(e) => handlePropsChange('height', e.target.value)}
+              className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+              placeholder="2rem"
+            />
+          </div>
+        )}
+
+        {/* Icon properties */}
+        {element.type === 'icon' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Ícone (emoji/símbolo)</label>
+              <input
+                type="text"
+                value={(element.props as { name: string }).name}
+                onChange={(e) => handlePropsChange('name', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+                placeholder="★"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Tamanho</label>
+              <input
+                type="text"
+                value={(element.props as { size?: string }).size || '2rem'}
+                onChange={(e) => handlePropsChange('size', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+                placeholder="2rem"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Cor</label>
+              <input
+                type="color"
+                value={(element.props as { color?: string }).color || '#64748b'}
+                onChange={(e) => handlePropsChange('color', e.target.value)}
+                className="h-8 w-full rounded-lg border border-slate-700 bg-[#111827]"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* List properties */}
+        {element.type === 'list' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Itens (um por linha)</label>
+              <textarea
+                value={((element.props as { items?: string[] }).items || []).join('\n')}
+                onChange={(e) => {
+                  const items = e.target.value.split('\n')
+                  updateElementProps(sectionId, element.id, { items })
+                }}
+                rows={4}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none resize-none"
+                placeholder="Item 1\nItem 2\nItem 3"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Marcador</label>
+              <select
+                value={(element.props as { marker?: string }).marker || 'disc'}
+                onChange={(e) => handlePropsChange('marker', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="disc">Disco</option>
+                <option value="circle">Círculo</option>
+                <option value="square">Quadrado</option>
+                <option value="none">Nenhum</option>
+              </select>
+            </div>
+          </div>
+        )}
+
+        {/* Testimonial properties */}
+        {element.type === 'testimonial' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Nome</label>
+              <input
+                type="text"
+                value={(element.props as { name: string }).name}
+                onChange={(e) => handlePropsChange('name', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Depoimento</label>
+              <textarea
+                value={(element.props as { text: string }).text}
+                onChange={(e) => handlePropsChange('text', e.target.value)}
+                rows={3}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none resize-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Cargo</label>
+              <input
+                type="text"
+                value={(element.props as { role?: string }).role || ''}
+                onChange={(e) => handlePropsChange('role', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">URL do Avatar</label>
+              <input
+                type="url"
+                value={(element.props as { avatar?: string }).avatar || ''}
+                onChange={(e) => handlePropsChange('avatar', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+                placeholder="https://..."
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Avaliação (1-5)</label>
+              <input
+                type="number"
+                min="1"
+                max="5"
+                value={(element.props as { rating?: number }).rating || 5}
+                onChange={(e) => updateElementProps(sectionId, element.id, { rating: parseInt(e.target.value) || 5 })}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Price properties */}
+        {element.type === 'price' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Preço</label>
+              <input
+                type="text"
+                value={(element.props as { price: string }).price}
+                onChange={(e) => handlePropsChange('price', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+                placeholder="97"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Moeda</label>
+              <input
+                type="text"
+                value={(element.props as { currency?: string }).currency || 'R$'}
+                onChange={(e) => handlePropsChange('currency', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+                placeholder="R$"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Período</label>
+              <input
+                type="text"
+                value={(element.props as { period?: string }).period || ''}
+                onChange={(e) => handlePropsChange('period', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+                placeholder="mês"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Descrição</label>
+              <input
+                type="text"
+                value={(element.props as { description?: string }).description || ''}
+                onChange={(e) => handlePropsChange('description', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Texto do Botão</label>
+              <input
+                type="text"
+                value={(element.props as { buttonText?: string }).buttonText || ''}
+                onChange={(e) => handlePropsChange('buttonText', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">URL do Botão</label>
+              <input
+                type="url"
+                value={(element.props as { buttonUrl?: string }).buttonUrl || ''}
+                onChange={(e) => handlePropsChange('buttonUrl', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+                placeholder="https://..."
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Badge properties */}
+        {element.type === 'badge' && (
+          <div className="space-y-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Texto</label>
+              <input
+                type="text"
+                value={(element.props as { text: string }).text}
+                onChange={(e) => handlePropsChange('text', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Variante</label>
+              <select
+                value={(element.props as { variant?: string }).variant || 'primary'}
+                onChange={(e) => handlePropsChange('variant', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="primary">Primário</option>
+                <option value="secondary">Secundário</option>
+                <option value="success">Sucesso</option>
+                <option value="warning">Aviso</option>
+                <option value="danger">Perigo</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">Tamanho</label>
+              <select
+                value={(element.props as { size?: string }).size || 'md'}
+                onChange={(e) => handlePropsChange('size', e.target.value)}
+                className="w-full rounded-lg border border-slate-700 bg-[#111827] px-3 py-2 text-sm text-slate-200 focus:border-emerald-500 focus:outline-none"
+              >
+                <option value="sm">Pequeno</option>
+                <option value="md">Médio</option>
+                <option value="lg">Grande</option>
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Style Properties */}

@@ -13,7 +13,20 @@
 /**
  * Tipos de elemento disponíveis
  */
-export const ELEMENT_TYPES = ['heading', 'text', 'button', 'image'] as const
+export const ELEMENT_TYPES = [
+  'heading',
+  'text',
+  'button',
+  'image',
+  'video',
+  'divider',
+  'spacer',
+  'icon',
+  'list',
+  'testimonial',
+  'price',
+  'badge',
+] as const
 export type ElementType = (typeof ELEMENT_TYPES)[number]
 
 /**
@@ -141,10 +154,76 @@ export interface ImageProps {
   alt: string
 }
 
+export interface VideoProps {
+  url: string
+  poster?: string
+  autoplay?: boolean
+  controls?: boolean
+  muted?: boolean
+}
+
+export interface DividerProps {
+  thickness?: string
+  width?: string
+  style?: 'solid' | 'dashed' | 'dotted'
+  color?: string
+}
+
+export interface SpacerProps {
+  height?: string
+}
+
+export interface IconProps {
+  name: string
+  size?: string
+  color?: string
+}
+
+export interface ListProps {
+  items: string[]
+  marker?: 'disc' | 'circle' | 'square' | 'none'
+  alignment?: Alignment
+}
+
+export interface TestimonialProps {
+  name: string
+  text: string
+  avatar?: string
+  role?: string
+  rating?: number
+}
+
+export interface PriceProps {
+  price: string
+  currency?: string
+  period?: string
+  description?: string
+  buttonText?: string
+  buttonUrl?: string
+}
+
+export interface BadgeProps {
+  text: string
+  variant?: 'primary' | 'secondary' | 'success' | 'warning' | 'danger'
+  size?: 'sm' | 'md' | 'lg'
+}
+
 /**
  * Props genéricas do elemento
  */
-export type ElementProps = HeadingProps | TextProps | ButtonProps | ImageProps
+export type ElementProps = 
+  | HeadingProps 
+  | TextProps 
+  | ButtonProps 
+  | ImageProps
+  | VideoProps
+  | DividerProps
+  | SpacerProps
+  | IconProps
+  | ListProps
+  | TestimonialProps
+  | PriceProps
+  | BadgeProps
 
 /**
  * Estilos visuais de um elemento

@@ -406,6 +406,168 @@ export function CanvasElement({
         )
       }
 
+      case 'video': {
+        const props = element.props as { url: string; poster?: string; autoplay?: boolean; controls?: boolean; muted?: boolean }
+        return (
+          <div style={{ textAlign: elementStyle.textAlign }}>
+            <video
+              src={props.url}
+              poster={props.poster}
+              autoPlay={props.autoplay}
+              controls={props.controls !== false}
+              muted={props.muted}
+              className="max-w-full h-auto rounded-lg"
+              style={{
+                borderRadius: elementStyle.borderRadius,
+              }}
+            />
+          </div>
+        )
+      }
+
+      case 'divider': {
+        const props = element.props as { thickness?: string; width?: string; style?: string; color?: string }
+        return (
+          <hr
+            style={{
+              borderWidth: props.thickness || '1px',
+              width: props.width || '100%',
+              borderStyle: props.style || 'solid',
+              borderColor: props.color || '#e2e8f0',
+              ...elementStyle,
+            }}
+          />
+        )
+      }
+
+      case 'spacer': {
+        const props = element.props as { height?: string }
+        return (
+          <div
+            style={{
+              height: props.height || '2rem',
+              ...elementStyle,
+            }}
+          />
+        )
+      }
+
+      case 'icon': {
+        const props = element.props as { name: string; size?: string; color?: string }
+        return (
+          <div
+            style={{
+              fontSize: props.size || '2rem',
+              color: props.color || '#64748b',
+              textAlign: elementStyle.textAlign,
+            }}
+          >
+            {props.name || '★'}
+          </div>
+        )
+      }
+
+      case 'list': {
+        const props = element.props as { items: string[]; marker?: string; alignment?: string }
+        const ListTag = props.marker === 'none' ? 'div' : 'ul'
+        const listStyle: React.CSSProperties = {
+          listStyleType: props.marker || 'disc',
+          ...elementStyle,
+        }
+        if (props.alignment) {
+          listStyle.textAlign = props.alignment as React.CSSProperties['textAlign']
+        }
+        return (
+          <ListTag
+            className="list-inside space-y-1"
+            style={listStyle}
+          >
+            {(props.items || []).map((item, i) => (
+              <li key={i} className="text-base">
+                {item}
+              </li>
+            ))}
+          </ListTag>
+        )
+      }
+
+      case 'testimonial': {
+        const props = element.props as { name: string; text: string; avatar?: string; role?: string; rating?: number }
+        return (
+          <div className="rounded-lg bg-slate-800/50 p-6" style={elementStyle}>
+            {props.rating && (
+              <div className="mb-2 text-amber-400">
+                {'★'.repeat(props.rating)}
+              </div>
+            )}
+            <p className="mb-4 text-slate-300 italic">"{props.text}"</p>
+            <div className="flex items-center gap-3">
+              {props.avatar && (
+                <img
+                  src={props.avatar}
+                  alt={props.name}
+                  className="h-10 w-10 rounded-full"
+                />
+              )}
+              <div>
+                <div className="font-medium text-white">{props.name}</div>
+                {props.role && <div className="text-sm text-slate-400">{props.role}</div>}
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      case 'price': {
+        const props = element.props as { price: string; currency?: string; period?: string; description?: string; buttonText?: string; buttonUrl?: string }
+        return (
+          <div className="rounded-lg bg-slate-800/50 p-6 text-center" style={elementStyle}>
+            {props.description && <div className="mb-2 text-slate-400">{props.description}</div>}
+            <div className="mb-2">
+              <span className="text-4xl font-bold text-white">{props.currency || 'R$'} {props.price}</span>
+              {props.period && <span className="text-slate-400">/{props.period}</span>}
+            </div>
+            {props.buttonText && (
+              <a
+                href={props.buttonUrl || '#'}
+                onClick={(e) => e.preventDefault()}
+                className="inline-block rounded-lg bg-emerald-600 px-6 py-2 font-medium text-white hover:bg-emerald-700 transition-colors"
+              >
+                {props.buttonText}
+              </a>
+            )}
+          </div>
+        )
+      }
+
+      case 'badge': {
+        const props = element.props as { text: string; variant?: string; size?: string }
+        const variantStyles: Record<string, string> = {
+          primary: 'bg-emerald-500/10 text-emerald-400',
+          secondary: 'bg-slate-500/10 text-slate-400',
+          success: 'bg-green-500/10 text-green-400',
+          warning: 'bg-amber-500/10 text-amber-400',
+          danger: 'bg-red-500/10 text-red-400',
+        }
+        const sizeStyles: Record<string, string> = {
+          sm: 'px-2 py-0.5 text-xs',
+          md: 'px-3 py-1 text-sm',
+          lg: 'px-4 py-1.5 text-base',
+        }
+        return (
+          <span
+            className={clsx(
+              'inline-block rounded-full font-medium',
+              variantStyles[props.variant || 'primary'],
+              sizeStyles[props.size || 'md']
+            )}
+            style={elementStyle}
+          >
+            {props.text}
+          </span>
+        )
+      }
+
       default:
         return null
     }

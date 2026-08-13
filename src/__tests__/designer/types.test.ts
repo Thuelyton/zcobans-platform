@@ -27,7 +27,7 @@ import type {
 describe('Designer Types', () => {
   describe('ELEMENT_TYPES', () => {
     it('should have all element types', () => {
-      expect(ELEMENT_TYPES).toEqual(['heading', 'text', 'button', 'image'])
+      expect(ELEMENT_TYPES).toEqual(['heading', 'text', 'button', 'image', 'video', 'divider', 'spacer', 'icon', 'list', 'testimonial', 'price', 'badge'])
     })
 
     it('should contain heading', () => {

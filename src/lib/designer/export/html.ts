@@ -149,6 +149,84 @@ function renderElement(element: DesignerElement): string {
       return `<img src="${url}" alt="${alt}" class="responsive-img"${styleAttr} />`
     }
     
+    case 'video': {
+      const url = sanitizeURL((props.url as string) || '')
+      const poster = props.poster ? ` poster="${sanitizeURL(props.poster)}"` : ''
+      const controls = props.controls !== false ? ' controls' : ''
+      const muted = props.muted ? ' muted' : ''
+      const autoplay = props.autoplay ? ' autoPlay loop' : ''
+      return `<video src="${url}"${poster}${controls}${muted}${autoplay} class="responsive-video"${styleAttr}></video>`
+    }
+    
+    case 'divider': {
+      const thickness = (props.thickness as string) || '1px'
+      const width = (props.width as string) || '100%'
+      const borderStyle = (props.style as string) || 'solid'
+      const color = escapeHTML((props.color as string) || '#e2e8f0')
+      return `<hr style="border-width: ${thickness}; width: ${width}; border-style: ${borderStyle}; border-color: ${color};"${styleAttr} />`
+    }
+    
+    case 'spacer': {
+      const height = (props.height as string) || '2rem'
+      return `<div style="height: ${height};"${styleAttr}></div>`
+    }
+    
+    case 'icon': {
+      const name = escapeHTML((props.name as string) || '★')
+      const size = (props.size as string) || '2rem'
+      const color = escapeHTML((props.color as string) || '#64748b')
+      return `<div style="font-size: ${size}; color: ${color};"${styleAttr}>${name}</div>`
+    }
+    
+    case 'list': {
+      const items = (props.items as string[]) || []
+      const marker = (props.marker as string) || 'disc'
+      const listStyle = marker === 'none' ? 'none' : marker
+      const listItems = items.map(item => `        <li>${escapeHTML(item)}</li>`).join('\n')
+      return `<ul style="list-style-type: ${listStyle}; padding-left: 1.5rem;"${styleAttr}>\n${listItems}\n      </ul>`
+    }
+    
+    case 'testimonial': {
+      const name = escapeHTML((props.name as string) || '')
+      const text = escapeHTML((props.text as string) || '')
+      const avatar = props.avatar ? `<img src="${sanitizeURL(props.avatar)}" alt="${name}" style="width: 40px; height: 40px; border-radius: 50%;" />` : ''
+      const role = props.role ? `<div style="font-size: 0.875rem; color: #94a3b8;">${escapeHTML(props.role)}</div>` : ''
+      const rating = props.rating ? `<div style="color: #fbbf24; margin-bottom: 0.5rem;">${'★'.repeat(props.rating)}</div>` : ''
+      return `<div class="testimonial" style="background-color: #1e293b; padding: 1.5rem; border-radius: 0.5rem;"${styleAttr}>\n        ${rating}\n        <p style="font-style: italic; color: #cbd5e1; margin-bottom: 1rem;">\"${text}\"</p>\n        <div style="display: flex; align-items: center; gap: 0.75rem;">\n          ${avatar}\n          <div>\n            <div style="font-weight: 500; color: white;">${name}</div>\n            ${role}\n          </div>\n        </div>\n      </div>`
+    }
+    
+    case 'price': {
+      const price = escapeHTML((props.price as string) || '0')
+      const currency = escapeHTML((props.currency as string) || 'R$')
+      const period = props.period ? `<span style="color: #94a3b8;">/${escapeHTML(props.period)}</span>` : ''
+      const description = props.description ? `<div style="color: #94a3b8; margin-bottom: 0.5rem;">${escapeHTML(props.description)}</div>` : ''
+      const buttonText = props.buttonText ? `<a href="${sanitizeURL(props.buttonUrl || '#')}" class="btn btn-primary" style="margin-top: 1rem;">${escapeHTML(props.buttonText)}</a>` : ''
+      return `<div class="price-card" style="background-color: #1e293b; padding: 1.5rem; border-radius: 0.5rem; text-align: center;"${styleAttr}>\n        ${description}\n        <div style="font-size: 2.25rem; font-weight: 700; color: white;">${currency} ${price}${period}</div>\n        ${buttonText}\n      </div>`
+    }
+    
+    case 'badge': {
+      const text = escapeHTML((props.text as string) || '')
+      const variant = (props.variant as string) || 'primary'
+      const size = (props.size as string) || 'md'
+      
+      const variantStyles: Record<string, string> = {
+        primary: 'background-color: rgba(16, 185, 129, 0.1); color: #34d399;',
+        secondary: 'background-color: rgba(100, 116, 139, 0.1); color: #94a3b8;',
+        success: 'background-color: rgba(34, 197, 94, 0.1); color: #4ade80;',
+        warning: 'background-color: rgba(245, 158, 11, 0.1); color: #fbbf24;',
+        danger: 'background-color: rgba(239, 68, 68, 0.1); color: #f87171;',
+      }
+      
+      const sizeStyles: Record<string, string> = {
+        sm: 'padding: 0.125rem 0.5rem; font-size: 0.75rem;',
+        md: 'padding: 0.25rem 0.75rem; font-size: 0.875rem;',
+        lg: 'padding: 0.375rem 1rem; font-size: 1rem;',
+      }
+      
+      const badgeStyle = `${variantStyles[variant] || variantStyles.primary} ${sizeStyles[size] || sizeStyles.md}`
+      return `<span style="${badgeStyle} border-radius: 9999px; font-weight: 500;"${styleAttr}>${text}</span>`
+    }
+    
     default:
       return ''
   }

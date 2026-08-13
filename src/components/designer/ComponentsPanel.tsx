@@ -20,6 +20,14 @@ import {
   Type,
   Image,
   Square,
+  Video,
+  Minus,
+  Space,
+  Star,
+  List,
+  MessageSquare,
+  DollarSign,
+  Tag,
 } from 'lucide-react'
 import { useDesigner } from '@/lib/designer/store'
 import { createSectionFromTemplate } from '@/lib/designer/templates'
@@ -51,6 +59,14 @@ const elementTypes: { type: ElementType; name: string; icon: typeof Heading1 }[]
   { type: 'text', name: 'Text', icon: Type },
   { type: 'image', name: 'Image', icon: Image },
   { type: 'button', name: 'Button', icon: Square },
+  { type: 'video', name: 'Video', icon: Video },
+  { type: 'divider', name: 'Divider', icon: Minus },
+  { type: 'spacer', name: 'Spacer', icon: Space },
+  { type: 'icon', name: 'Icon', icon: Star },
+  { type: 'list', name: 'List', icon: List },
+  { type: 'testimonial', name: 'Testimonial', icon: MessageSquare },
+  { type: 'price', name: 'Price', icon: DollarSign },
+  { type: 'badge', name: 'Badge', icon: Tag },
 ]
 
 // ============================================================================
@@ -171,6 +187,22 @@ function getDefaultProps(type: ElementType) {
       return { text: 'Clique Aqui', url: '#', variant: 'primary' as const }
     case 'image':
       return { url: 'https://via.placeholder.com/400x300', alt: 'Imagem' }
+    case 'video':
+      return { url: '', poster: '', autoplay: false, controls: true, muted: false }
+    case 'divider':
+      return { thickness: '1px', width: '100%', style: 'solid', color: '#e2e8f0' }
+    case 'spacer':
+      return { height: '2rem' }
+    case 'icon':
+      return { name: '★', size: '2rem', color: '#64748b' }
+    case 'list':
+      return { items: ['Item 1', 'Item 2', 'Item 3'], marker: 'disc', alignment: 'left' }
+    case 'testimonial':
+      return { name: 'Nome do Cliente', text: 'Depoimento do cliente aqui...', avatar: '', role: 'Cargo', rating: 5 }
+    case 'price':
+      return { price: '97', currency: 'R$', period: 'mês', description: 'Plano Básico', buttonText: 'Assinar', buttonUrl: '#' }
+    case 'badge':
+      return { text: 'Novo', variant: 'primary', size: 'md' }
     default:
       return { text: '' }
   }
