@@ -37,6 +37,7 @@ import {
   MAX_HISTORY_SIZE,
 } from './utils'
 import { createDefaultPage } from './templates'
+import { saveProject as saveProjectToSupabase, getProject as getProjectFromSupabase } from './client-repository'
 
 // ============================================================================
 // INITIAL STATE
@@ -45,6 +46,7 @@ import { createDefaultPage } from './templates'
 function createInitialState(): DesignerState {
   return {
     page: createDefaultPage(),
+    projectId: null,
     selectedSectionId: null,
     selectedElementId: null,
     device: 'desktop',
@@ -52,6 +54,7 @@ function createInitialState(): DesignerState {
     historyIndex: -1,
     isSaving: false,
     hasUnsavedChanges: false,
+    saveError: null,
   }
 }
 
@@ -493,6 +496,30 @@ function designerReducer(state: DesignerState, action: DesignerAction): Designer
         hasUnsavedChanges: action.payload,
       }
 
+    case 'SET_PROJECT_ID':
+      return {
+        ...state,
+        projectId: action.payload,
+      }
+
+    case 'SET_SAVE_ERROR':
+      return {
+        ...state,
+        saveError: action.payload,
+      }
+
+    case 'LOAD_PROJECT':
+      return {
+        ...state,
+        projectId: action.payload.projectId,
+        page: action.payload.page,
+        hasUnsavedChanges: false,
+        selectedSectionId: null,
+        selectedElementId: null,
+        history: [action.payload.page],
+        historyIndex: 0,
+      }
+
     default:
       return state
   }
@@ -534,6 +561,8 @@ interface DesignerContextValue {
 
   save: () => Promise<void>
   setPage: (page: DesignerPage) => void
+  loadProject: (projectId: string) => Promise<void>
+  setProjectId: (projectId: string | null) => void
 }
 
 const DesignerContext = createContext<DesignerContextValue | null>(null)
@@ -580,17 +609,36 @@ export function DesignerProvider({ children, initialPage }: DesignerProviderProp
     }
   }, [])
 
-  // Auto-save
+  // Auto-save to Supabase
   useEffect(() => {
-    const interval = setInterval(() => {
+    const interval = setInterval(async () => {
       if (state.hasUnsavedChanges && !state.isSaving) {
+        dispatch({ type: 'SET_SAVING', payload: true })
+        dispatch({ type: 'SET_SAVE_ERROR', payload: null })
+        
+        // Always save to localStorage as backup
         saveToLocalStorage(DESIGNER_STORAGE_KEY, state.page)
-        dispatch({ type: 'SET_UNSAVED', payload: false })
+        
+        // Try to save to Supabase
+        const result = await saveProjectToSupabase(state.projectId, state.page)
+        
+        if (result.success && result.project) {
+          // Update projectId if it was a new project
+          if (!state.projectId && result.project.id) {
+            dispatch({ type: 'SET_PROJECT_ID', payload: result.project.id })
+          }
+          dispatch({ type: 'SET_UNSAVED', payload: false })
+        } else {
+          // Keep unsaved state, show error
+          dispatch({ type: 'SET_SAVE_ERROR', payload: result.error || 'Erro ao salvar' })
+        }
+        
+        dispatch({ type: 'SET_SAVING', payload: false })
       }
     }, AUTO_SAVE_INTERVAL)
 
     return () => clearInterval(interval)
-  }, [state.hasUnsavedChanges, state.isSaving, state.page])
+  }, [state.hasUnsavedChanges, state.isSaving, state.page, state.projectId])
 
   // Save on page unload
   useEffect(() => {
@@ -756,15 +804,59 @@ export function DesignerProvider({ children, initialPage }: DesignerProviderProp
 
   const handleSave = useCallback(async () => {
     dispatch({ type: 'SET_SAVING', payload: true })
-    try {
-      saveToLocalStorage(DESIGNER_STORAGE_KEY, state.page)
-      // Simulate async save
-      await new Promise((resolve) => setTimeout(resolve, 300))
+    dispatch({ type: 'SET_SAVE_ERROR', payload: null })
+    
+    // Always save to localStorage as backup
+    saveToLocalStorage(DESIGNER_STORAGE_KEY, state.page)
+    
+    // Try to save to Supabase
+    const result = await saveProjectToSupabase(state.projectId, state.page)
+    
+    if (result.success && result.project) {
+      // Update projectId if it was a new project
+      if (!state.projectId && result.project.id) {
+        dispatch({ type: 'SET_PROJECT_ID', payload: result.project.id })
+      }
       dispatch({ type: 'SET_UNSAVED', payload: false })
+    } else {
+      // Show error but keep unsaved state
+      dispatch({ type: 'SET_SAVE_ERROR', payload: result.error || 'Erro ao salvar' })
+    }
+    
+    dispatch({ type: 'SET_SAVING', payload: false })
+  }, [dispatch, state.page, state.projectId])
+
+  const loadProject = useCallback(async (projectId: string) => {
+    dispatch({ type: 'SET_SAVING', payload: true })
+    dispatch({ type: 'SET_SAVE_ERROR', payload: null })
+    
+    try {
+      const project = await getProjectFromSupabase(projectId)
+      
+      if (project) {
+        dispatch({ 
+          type: 'LOAD_PROJECT', 
+          payload: { 
+            projectId: project.id, 
+            page: project.page_data 
+          } 
+        })
+        // Also save to localStorage as backup
+        saveToLocalStorage(DESIGNER_STORAGE_KEY, project.page_data)
+      } else {
+        dispatch({ type: 'SET_SAVE_ERROR', payload: 'Projeto não encontrado' })
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Erro ao carregar projeto'
+      dispatch({ type: 'SET_SAVE_ERROR', payload: message })
     } finally {
       dispatch({ type: 'SET_SAVING', payload: false })
     }
-  }, [dispatch, state.page])
+  }, [dispatch])
+
+  const setProjectId = useCallback((projectId: string | null) => {
+    dispatch({ type: 'SET_PROJECT_ID', payload: projectId })
+  }, [dispatch])
 
   // Create the value
   const contextValue: DesignerContextValue = {
@@ -792,6 +884,8 @@ export function DesignerProvider({ children, initialPage }: DesignerProviderProp
     canRedo: state.historyIndex < state.history.length - 1,
     save: handleSave,
     setPage,
+    loadProject,
+    setProjectId,
   }
 
   return (

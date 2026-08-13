@@ -320,6 +320,8 @@ export interface DesignerPage {
 export interface DesignerState {
   /** Página sendo editada */
   page: DesignerPage
+  /** ID do projeto no Supabase */
+  projectId: string | null
   /** ID da seção selecionada */
   selectedSectionId: string | null
   /** ID do elemento selecionado */
@@ -334,6 +336,8 @@ export interface DesignerState {
   isSaving: boolean
   /** Se há mudanças não salvas */
   hasUnsavedChanges: boolean
+  /** Mensagem de erro ao salvar */
+  saveError: string | null
 }
 
 /**
@@ -375,7 +379,12 @@ export type DesignerAction =
 
   // Saving
   | { type: 'SET_SAVING'; payload: boolean }
-  | { type: 'SET_UNSAVED'; payload: boolean };
+  | { type: 'SET_UNSAVED'; payload: boolean }
+  | { type: 'SET_PROJECT_ID'; payload: string | null }
+  | { type: 'SET_SAVE_ERROR'; payload: string | null }
+
+  // Project
+  | { type: 'LOAD_PROJECT'; payload: { projectId: string; page: DesignerPage } };
 
 // ============================================================================
 // TEMPLATE TYPES
