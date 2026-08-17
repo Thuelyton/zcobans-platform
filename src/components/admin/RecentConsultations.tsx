@@ -38,7 +38,7 @@ export interface Consultation {
   id: string
   clientName?: string
   clientDocument: string
-  type: 'cpf' | 'inss' | 'fgts' | 'telefone' | 'limpa_nome' | 'outro' | INSSQueryType
+  type: 'cpf' | 'inss' | 'telefone' | 'limpa_nome' | 'outro' | INSSQueryType
   status: ConsultationStatus | 'concluida' | 'pendente' | 'erro' | 'cancelada'
   creditsUsed: number
   createdAt: string
@@ -48,7 +48,7 @@ export interface Consultation {
 const typeConfig: Record<string, { label: string; icon: React.ReactNode; color: string }> = {
   cpf: { label: 'CPF/CNPJ', icon: <FileSearch className="h-4 w-4" />, color: 'text-emerald-400' },
   inss: { label: 'INSS', icon: <Database className="h-4 w-4" />, color: 'text-blue-400' },
-  fgts: { label: 'FGTS', icon: <CreditCard className="h-4 w-4" />, color: 'text-purple-400' },
+  // FGTS removido da interface - sem API oficial disponível
   telefone: { label: 'Telefone', icon: <Phone className="h-4 w-4" />, color: 'text-cyan-400' },
   limpa_nome: { label: 'Limpa Nome', icon: <Shield className="h-4 w-4" />, color: 'text-amber-400' },
   outro: { label: 'Outro', icon: <FileSearch className="h-4 w-4" />, color: 'text-slate-400' },

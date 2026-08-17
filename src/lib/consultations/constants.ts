@@ -14,6 +14,8 @@ export type DocumentType = (typeof DOCUMENT_TYPES)[number]
 // GENERAL QUERY TYPES (existentes)
 // ============================================================================
 
+// NOTA: 'fgts' está na lista para compatibilidade, mas está DESABILITADO na interface
+// Não existe API oficial/autorizada para consulta de FGTS por terceiros
 export const QUERY_TYPES = ['cpf', 'inss', 'fgts', 'telefone', 'limpa_nome'] as const
 export type QueryType = (typeof QUERY_TYPES)[number]
 
@@ -133,7 +135,7 @@ export const INSS_QUERY_DESCRIPTIONS: Record<INSSQueryType, string> = {
 export const QUERY_TYPE_LABELS: Record<QueryType, string> = {
   cpf: 'CPF/CNPJ',
   inss: 'INSS',
-  fgts: 'FGTS',
+  fgts: 'FGTS (Indisponível)', // Sem API oficial
   telefone: 'Telefone',
   limpa_nome: 'Limpa Nome',
 }

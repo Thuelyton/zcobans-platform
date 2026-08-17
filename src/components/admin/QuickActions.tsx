@@ -44,15 +44,7 @@ const defaultActions: QuickAction[] = [
     href: '/admin/consultas?tipo=inss',
     icon: <Database className="h-5 w-5" />,
     color: 'blue',
-    enabled: true,
-  },
-  {
-    name: 'Consulta FGTS',
-    description: 'Consultar saldo FGTS',
-    href: '/admin/consultas?tipo=fgts',
-    icon: <CreditCard className="h-5 w-5" />,
-    color: 'purple',
-    enabled: true,
+    enabled: false, // Desabilitado - sem API oficial
   },
   {
     name: 'Limpa Nome',
