@@ -1,22 +1,64 @@
 /**
  * Query Providers Module
  * Etapa 9.3.2 - Provider Interface & Mock
+ * Atualizado na Etapa 9.18 - Fortalecimento do Motor de Consultas
  *
  * Este módulo fornece o sistema de providers para consultas.
- * Utiliza o Provider/Adapter Pattern para permitir expansão fácil.
+ * Utiliza o Provider/Adapter Pattern + Registry Pattern.
+ *
+ * ARQUITETURA:
+ * - IQueryProvider: Interface base para todos os providers
+ * - ProviderRegistry: Registry central para gerenciar providers
+ * - QueryProviderFactory: Factory para seleção e execução
+ * - MockProvider: Provider para desenvolvimento/testes
+ * - INSSConectaProvider: Provider para APIs oficiais INSS (futuro)
  */
 
-// Interface
+// ============================================================================
+// INTERFACE
+// ============================================================================
+
 export type { IQueryProvider, ProviderConfig } from './query-provider.interface'
 
-// Factory
+// ============================================================================
+// REGISTRY
+// ============================================================================
+
+export {
+  ProviderRegistry,
+  getProviderRegistry,
+  findProviderForQuery,
+} from './provider-registry'
+
+export type {
+  Environment,
+  ProviderMode,
+  ProviderRegistryEntry,
+  FindProviderOptions,
+  FindProviderResult,
+  RegistryStats,
+} from './provider-registry'
+
+// ============================================================================
+// FACTORY
+// ============================================================================
+
 export {
   QueryProviderFactory,
   executeQuery,
   isQueryTypeSupported,
 } from './query-provider.factory'
 
-// Types
+export type {
+  FactoryMode,
+  FactoryConfig,
+  DetailedQueryResult,
+} from './query-provider.factory'
+
+// ============================================================================
+// TYPES
+// ============================================================================
+
 export type {
   ProviderConfig as ProviderSettings,
   ProviderInfo,
@@ -31,7 +73,37 @@ export type {
   MockLimpaNomeData,
 } from './query-provider.types'
 
-// Mock Provider
+// ============================================================================
+// MOCK PROVIDER
+// ============================================================================
+
 export { MockQueryProvider } from './mock/mock-query.provider'
-export type { MockProviderConfig } from './mock/mock-query.provider'
-export { getMockData, simulateDelay, generateRandomScore, maskDocument } from './mock/mock-data'
+export type { MockProviderConfig, MockScenario } from './mock/mock-query.provider'
+
+export {
+  getMockData,
+  simulateDelay,
+  generateDeterministicScore,
+  generateRandomScore,
+  maskDocument,
+} from './mock/mock-data'
+
+// ============================================================================
+// INSS CONECTA PROVIDER
+// ============================================================================
+
+export {
+  INSSConectaProvider,
+  getINSSConectaConfig,
+  validateINSSConectaConfig,
+  getINSSConectaConfigErrors,
+  isINSSConectaProviderReady,
+  getINSSConectaDiagnostics,
+} from './inss-conecta'
+
+export type {
+  INSSConectaConfig,
+  INSSConectaProviderConfig,
+  INSSBenefitResponse,
+  INSSErrorResponse,
+} from './inss-conecta'

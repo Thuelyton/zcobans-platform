@@ -38,8 +38,9 @@ export type ConsultationStatus = (typeof CONSULTATION_STATUS)[number]
 
 /**
  * Tipos de provider disponíveis
+ * Atualizado na Etapa 9.17 - Adicionado 'inss-conecta'
  */
-export const PROVIDER_TYPES = ['mock', 'serasa', 'sivec', 'detran'] as const
+export const PROVIDER_TYPES = ['mock', 'serasa', 'sivec', 'detran', 'inss-conecta'] as const
 export type ProviderType = (typeof PROVIDER_TYPES)[number]
 
 // ============================================================================

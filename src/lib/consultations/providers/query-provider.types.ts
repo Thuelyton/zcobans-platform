@@ -1,6 +1,7 @@
 /**
  * Query Provider Types
  * Etapa 9.3.2 - Provider Interface & Mock
+ * Atualizado na Etapa 9.17 - INSS Conecta
  *
  * Tipos específicos para o sistema de providers de consulta.
  */

@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { X, Loader2, AlertCircle, CheckCircle } from 'lucide-react'
-import { clsx } from 'clsx'
 import { Input } from '@/components/ui/Input'
 import { Select } from '@/components/ui/Select'
 import { Button } from '@/components/ui/Button'
@@ -17,10 +16,8 @@ import {
   maskDocumentForDisplay,
   detectDocumentType,
   supportsQRCode,
-  createINSSInputSchema,
-  type CreateINSSInput,
 } from '@/lib/consultations/inss-types'
-import { getINSSService } from '@/lib/consultations/inss-service'
+import { createConsultation } from '@/lib/consultations/consultation.actions'
 
 interface ConsultaRequestModalProps {
   isOpen: boolean
@@ -65,6 +62,7 @@ export function ConsultaRequestModal({
   defaultQueryType,
 }: ConsultaRequestModalProps) {
   const [document, setDocument] = useState('')
+  const [clientName, setClientName] = useState('')
   const [queryType, setQueryType] = useState<INSSQueryType | ''>(defaultQueryType || '')
   const [qrCode, setQrCode] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -75,6 +73,7 @@ export function ConsultaRequestModal({
   useEffect(() => {
     if (isOpen) {
       setDocument('')
+      setClientName('')
       setQueryType(defaultQueryType || '')
       setQrCode(false)
       setLoading(false)
@@ -122,6 +121,11 @@ export function ConsultaRequestModal({
       return
     }
 
+    if (!clientName.trim()) {
+      setError('Nome do cliente é obrigatório')
+      return
+    }
+
     if (!queryType) {
       setError('Selecione o tipo de consulta')
       return
@@ -130,21 +134,23 @@ export function ConsultaRequestModal({
     setLoading(true)
 
     try {
-      const input: CreateINSSInput = {
-        document: digits,
+      const result = await createConsultation({
+        clientName: clientName.trim(),
+        clientDocument: digits,
         documentType: detectDocumentType(digits),
         queryType: queryType as INSSQueryType,
-        qrCode: showQRCode ? qrCode : false,
+        metadata: showQRCode ? { qrCode } : undefined,
+      })
+
+      if (result.success) {
+        setSuccess(true)
+        setTimeout(() => {
+          onComplete?.()
+          onClose()
+        }, 1500)
+      } else {
+        setError(result.error)
       }
-
-      const service = getINSSService()
-      await service.createConsulta(input)
-
-      setSuccess(true)
-      setTimeout(() => {
-        onComplete?.()
-        onClose()
-      }, 1500)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Erro ao criar consulta')
     } finally {
@@ -211,6 +217,18 @@ export function ConsultaRequestModal({
               </div>
             ) : (
               <div className="space-y-5">
+                {/* Client name input */}
+                <Input
+                  label="Nome do cliente"
+                  placeholder="Nome completo do cliente"
+                  value={clientName}
+                  onChange={(e) => {
+                    setClientName(e.target.value)
+                    setError(null)
+                  }}
+                  disabled={loading}
+                />
+
                 {/* Document input */}
                 <Input
                   label="CPF / CNPJ do cliente"
@@ -289,7 +307,7 @@ export function ConsultaRequestModal({
                   <Button
                     type="button"
                     onClick={handleSubmit}
-                    disabled={loading || !document || !queryType}
+                    disabled={loading || !document || !queryType || !clientName.trim()}
                     isLoading={loading}
                     className="min-w-[140px]"
                   >
@@ -299,7 +317,7 @@ export function ConsultaRequestModal({
                         Solicitando...
                       </>
                     ) : (
-                      'Solicitar Extrato'
+                      'Solicitar Consulta'
                     )}
                   </Button>
                 </div>

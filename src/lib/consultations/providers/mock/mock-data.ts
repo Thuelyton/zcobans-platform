@@ -1,9 +1,13 @@
 /**
  * Mock Data for Query Providers
  * Etapa 9.3.2 - Provider Interface & Mock
+ * Atualizado na Etapa 9.18 - Dados determinísticos
  *
  * Dados simulados para desenvolvimento e testes.
  * Nenhum dado real deve ser utilizado aqui.
+ *
+ * IMPORTANTE: Todos os dados são determinísticos.
+ * Não Math.random() para selecionar dados.
  */
 
 import type { QueryType } from '../../types'
@@ -221,9 +225,14 @@ export const mockDatabase: Record<QueryType, unknown[]> = {
 /**
  * Obtém dados mockados para um tipo de consulta
  *
+ * COMPORTAMENTO DETERMINÍSTICO:
+ * - Se documento fornecido e encontrado, retorna esse documento
+ * - Se documento fornecido e não encontrado, retorna primeiro da lista
+ * - Se nenhum documento fornecido, retorna primeiro da lista
+ *
  * @param queryType - Tipo da consulta
  * @param document - Documento para busca (opcional)
- * @returns Dados mockados encontrados ou dados aleatórios
+ * @returns Dados mockados encontrados ou primeiro da lista
  */
 export function getMockData(queryType: QueryType, document?: string): unknown {
   const dataArray = mockDatabase[queryType]
@@ -243,9 +252,8 @@ export function getMockData(queryType: QueryType, document?: string): unknown {
     if (found) return found
   }
 
-  // Retorna dados aleatórios se não encontrar
-  const randomIndex = Math.floor(Math.random() * dataArray.length)
-  return dataArray[randomIndex]
+  // SEMPRE retorna o primeiro item (determinístico)
+  return dataArray[0]
 }
 
 /**
@@ -254,14 +262,40 @@ export function getMockData(queryType: QueryType, document?: string): unknown {
  * @param ms - Milissegundos para esperar
  */
 export function simulateDelay(ms: number): Promise<void> {
+  if (ms <= 0) {
+    return Promise.resolve()
+  }
   return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
 /**
- * Gera um score aleatório entre 70 e 100
+ * Gera um score determinístico baseado no queryType e document
+ *
+ * IMPORTANTE: Não usa Math.random() para ser determinístico em testes
+ *
+ * @param queryType - Tipo de consulta
+ * @param document - Documento (opcional)
+ * @returns Score entre 70 e 100
+ */
+export function generateDeterministicScore(queryType: string, document?: string): number {
+  // Gera score determinístico baseado no hash simples
+  let hash = 0
+  const str = `${queryType}_${document || 'default'}`
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i)
+    hash = ((hash << 5) - hash) + char
+    hash = hash & hash // Converte para 32bit integer
+  }
+  // Converte para positivo e limita entre 70-100
+  const score = Math.abs(hash) % 31 + 70
+  return score
+}
+
+/**
+ * @deprecated Use generateDeterministicScore() para testes determinísticos
  */
 export function generateRandomScore(): number {
-  return Math.floor(Math.random() * 31) + 70
+  return generateDeterministicScore('random_' + Date.now())
 }
 
 /**

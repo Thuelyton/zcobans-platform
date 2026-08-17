@@ -1,6 +1,9 @@
 /**
  * Query Provider Factory Tests
  * Etapa 9.3.2 - Provider Interface & Mock
+ * Atualizado na Etapa 9.18 - Testes determinísticos
+ *
+ * Todos os testes são determinísticos
  */
 
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
@@ -13,18 +16,13 @@ describe('QueryProviderFactory', () => {
   beforeEach(() => {
     // Reseta a instância singleton antes de cada teste
     QueryProviderFactory.resetInstance()
-    
-    // Cria factory com mock provider deterministic (successRate: 100)
-    factory = QueryProviderFactory.getInstance()
-    
-    // Remove o mock provider padrão e recria com successRate 100
-    factory.unregister('mock')
-    const deterministicMock = new MockQueryProvider({ successRate: 100 })
-    factory.register('mock', deterministicMock, {
-      id: 'mock-001',
-      slug: 'mock-provider',
-      type: 'mock',
-      active: true,
+
+    // Cria factory em modo test (determinístico)
+    factory = QueryProviderFactory.getInstance({
+      mode: 'test',
+      autoRegisterDefaults: true,
+      allowMockInProduction: false,
+      debugMode: false,
     })
   })
 
@@ -40,6 +38,23 @@ describe('QueryProviderFactory', () => {
     })
   })
 
+  describe('Configuration', () => {
+    it('should have correct default mode', () => {
+      expect(factory.getMode()).toBe('test')
+    })
+
+    it('should allow changing mode', () => {
+      factory.setMode('development')
+      expect(factory.getMode()).toBe('development')
+    })
+
+    it('should return config', () => {
+      const config = factory.getConfig()
+      expect(config.mode).toBe('test')
+      expect(config.allowMockInProduction).toBe(false)
+    })
+  })
+
   describe('Default Providers', () => {
     it('should register Mock provider by default', () => {
       expect(factory.hasProvider('mock')).toBe(true)
@@ -47,7 +62,7 @@ describe('QueryProviderFactory', () => {
 
     it('should have mock provider active', () => {
       const providers = factory.listProviders()
-      const mockProvider = providers.find((p) => p.name === 'mock')
+      const mockProvider = providers.find((p) => p.type === 'mock')
       expect(mockProvider).toBeDefined()
       expect(mockProvider?.active).toBe(true)
     })
@@ -55,7 +70,7 @@ describe('QueryProviderFactory', () => {
 
   describe('register()', () => {
     it('should register a new provider', () => {
-      const newProvider = new MockQueryProvider()
+      const newProvider = new MockQueryProvider({ scenario: 'success' })
       factory.register('custom-mock', newProvider, {
         id: 'custom-001',
         slug: 'custom-mock',
@@ -67,7 +82,7 @@ describe('QueryProviderFactory', () => {
     })
 
     it('should add provider to query type map', () => {
-      const newProvider = new MockQueryProvider()
+      const newProvider = new MockQueryProvider({ scenario: 'success' })
       factory.register('custom-mock', newProvider, {
         id: 'custom-001',
         slug: 'custom-mock',
@@ -82,7 +97,7 @@ describe('QueryProviderFactory', () => {
 
   describe('unregister()', () => {
     it('should remove a provider', () => {
-      const newProvider = new MockQueryProvider()
+      const newProvider = new MockQueryProvider({ scenario: 'success' })
       factory.register('temp-provider', newProvider, {
         id: 'temp-001',
         slug: 'temp',
@@ -136,6 +151,8 @@ describe('QueryProviderFactory', () => {
 
       expect(result.success).toBe(true)
       expect(result.rawData).toBeDefined()
+      expect(result.providerUsed).toBeDefined()
+      expect(result.environment).toBe('test')
     })
 
     it('should execute with preferred provider', async () => {
@@ -149,6 +166,7 @@ describe('QueryProviderFactory', () => {
       )
 
       expect(result.success).toBe(true)
+      expect(result.providerUsed).toBe('Mock Provider')
     })
 
     it('should fallback to default provider when preferred not found', async () => {
@@ -162,6 +180,75 @@ describe('QueryProviderFactory', () => {
       )
 
       expect(result.success).toBe(true)
+    })
+
+    it('should include provider info in result', async () => {
+      const result = await factory.execute({
+        document: '12345678901',
+        documentType: 'cpf',
+        queryType: 'cpf',
+      })
+
+      expect(result.providerUsed).toBeDefined()
+      expect(result.providerType).toBeDefined()
+      expect(result.environment).toBeDefined()
+    })
+
+    it('should indicate if using mock fallback', async () => {
+      const result = await factory.execute({
+        document: '12345678901',
+        documentType: 'cpf',
+        queryType: 'cpf',
+      })
+
+      // Em modo test, sempre usa mock
+      expect(result.wasFallback).toBe(true)
+    })
+  })
+
+  describe('Production Mode', () => {
+    it('should not register mock in production by default', () => {
+      QueryProviderFactory.resetInstance()
+
+      const prodFactory = QueryProviderFactory.getInstance({
+        mode: 'production',
+        autoRegisterDefaults: true,
+        allowMockInProduction: false,
+      })
+
+      expect(prodFactory.hasProvider('mock')).toBe(false)
+    })
+
+    it('should allow mock in production when configured', () => {
+      QueryProviderFactory.resetInstance()
+
+      const prodFactory = QueryProviderFactory.getInstance({
+        mode: 'production',
+        autoRegisterDefaults: true,
+        allowMockInProduction: true,
+      })
+
+      expect(prodFactory.hasProvider('mock')).toBe(true)
+    })
+
+    it('should return error in production without real provider', async () => {
+      QueryProviderFactory.resetInstance()
+
+      const prodFactory = QueryProviderFactory.getInstance({
+        mode: 'production',
+        autoRegisterDefaults: true,
+        allowMockInProduction: false,
+      })
+
+      const result = await prodFactory.execute({
+        document: '12345678901',
+        documentType: 'cpf',
+        queryType: 'cpf',
+      })
+
+      expect(result.success).toBe(false)
+      expect(result.errorCode).toBe('NO_PROVIDER_AVAILABLE')
+      expect(result.environment).toBe('production')
     })
   })
 
@@ -200,6 +287,15 @@ describe('QueryProviderFactory', () => {
       expect(factory.isQueryTypeSupported('fgts')).toBe(true)
       expect(factory.isQueryTypeSupported('telefone')).toBe(true)
       expect(factory.isQueryTypeSupported('limpa_nome')).toBe(true)
+    })
+  })
+
+  describe('getStats()', () => {
+    it('should return stats', () => {
+      const stats = factory.getStats()
+      expect(stats.mode).toBe('test')
+      expect(stats.registry).toBeDefined()
+      expect(stats.registry.totalProviders).toBeGreaterThan(0)
     })
   })
 })

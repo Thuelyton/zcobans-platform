@@ -638,6 +638,41 @@ export interface Database {
           },
         ]
       }
+      consultation_audit_log: {
+        Row: {
+          id: string
+          consultation_id: string | null
+          event_type: string
+          event_data: Json | null
+          user_id: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          consultation_id?: string | null
+          event_type: string
+          event_data?: Json | null
+          user_id?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          consultation_id?: string | null
+          event_type?: string
+          event_data?: Json | null
+          user_id?: string | null
+          created_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'consultation_audit_log_consultation_id_fkey'
+            columns: ['consultation_id']
+            isOneToOne: false
+            referencedRelation: 'consultations'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

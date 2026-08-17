@@ -1,12 +1,19 @@
 /**
  * Query Provider Factory
  * Etapa 9.3.2 - Provider Interface & Mock
+ * Atualizado na Etapa 9.18 - Fortalecimento do Motor de Consultas
  *
  * Factory/Registry para gerenciar providers de consulta.
  * Implementa o padrão Factory + Registry para permitir:
  * - Registro dinâmico de providers
  * - Seleção automática do provider correto
  * - Extensão fácil para novos providers
+ * - Fallback configurável por ambiente
+ * - Controle de Mock em produção
+ *
+ * SEGURANÇA:
+ * - Em produção, NÃO faz fallback automático para Mock
+ * - Isso evita que clientes recebam dados simulados sem saber
  */
 
 import type {
@@ -18,77 +25,183 @@ import type {
 } from '../types'
 import type { IQueryProvider } from './query-provider.interface'
 import { MockQueryProvider } from './mock/mock-query.provider'
+import { INSSConectaProvider, isINSSConectaProviderReady } from './inss-conecta'
+import {
+  ProviderRegistry,
+  type Environment,
+  type FindProviderResult,
+} from './provider-registry'
 
 // ============================================================================
-// PROVIDER REGISTRY
+// TYPES
 // ============================================================================
 
 /**
- * Informações sobre um provider registrado
+ * Modo de operação da factory
  */
-interface ProviderRegistration {
-  /** Instância do provider */
-  provider: IQueryProvider
-  /** Configuração do provider */
-  config: {
-    id: string
-    slug: string
-    type: ProviderType
-    active: boolean
-  }
-  /** Capacidades do provider */
-  capabilities: ProviderCapability[]
+export type FactoryMode = 'development' | 'test' | 'production'
+
+/**
+ * Configuração da factory
+ */
+export interface FactoryConfig {
+  /** Modo de operação */
+  mode: FactoryMode
+
+  /** Se deve auto-registrar providers padrão */
+  autoRegisterDefaults: boolean
+
+  /** Se deve permitir mock em produção */
+  allowMockInProduction: boolean
+
+  /** Se deve logar seleção de provider */
+  debugMode: boolean
 }
+
+/**
+ * Resultado detalhado da execução
+ */
+export interface DetailedQueryResult extends QueryResult {
+  /** Provider que processou a consulta */
+  providerUsed?: string
+
+  /** Tipo do provider (mock/real) */
+  providerType?: ProviderType
+
+  /** Se foi fallback para mock */
+  wasFallback?: boolean
+
+  /** Ambiente de execução */
+  environment?: string
+}
+
+// ============================================================================
+// QUERY PROVIDER FACTORY
+// ============================================================================
 
 /**
  * QueryProviderFactory
  *
- * Factory e Registry central para providers de consulta.
+ * Factory central para providers de consulta.
+ * Utiliza ProviderRegistry internamente para gerenciar providers.
+ *
+ * COMPORTAMENTO POR AMBIENTE:
+ *
+ * development:
+ * - Usa provider real se disponível
+ * - Fallback automático para MockProvider
+ *
+ * test:
+ * - Usa MockProvider sempre (para testes determinísticos)
+ *
+ * production:
+ * - Usa provider real se disponível
+ * - SEM fallback automático para Mock
+ * - Retorna erro se não houver provider real
  *
  * @example
  * ```typescript
- * // Obtém o factory
  * const factory = QueryProviderFactory.getInstance()
  *
- * // Registra um provider
- * factory.register('my-provider', myProvider, { id: '1', slug: 'my', type: 'mock', active: true })
- *
- * // Obtém provider para um tipo de consulta
- * const provider = factory.getProviderForQuery('cpf')
- *
- * // Executa uma consulta
+ * // Executa consulta
  * const result = await factory.execute({
  *   document: '12345678901',
  *   documentType: 'cpf',
  *   queryType: 'cpf',
  * })
+ *
+ * // Verifica se usou mock
+ * if (result.wasFallback) {
+ *   console.log('Usando dados simulados')
+ * }
  * ```
  */
 export class QueryProviderFactory {
   private static instance: QueryProviderFactory | null = null
-  private providers: Map<string, ProviderRegistration> = new Map()
-  private queryTypeMap: Map<QueryType, string[]> = new Map()
+  private registry: ProviderRegistry
+  private config: FactoryConfig
 
-  private constructor() {
-    // Singleton - inicializa com providers padrão
-    this.registerDefaultProviders()
+  private constructor(config?: Partial<FactoryConfig>) {
+    this.registry = ProviderRegistry.getInstance()
+    this.config = {
+      mode: this.detectMode(),
+      autoRegisterDefaults: true,
+      allowMockInProduction: false,
+      debugMode: false,
+      ...config,
+    }
+
+    // Configura o registry
+    this.registry.setAllowMockFallbackInProduction(
+      this.config.allowMockInProduction
+    )
+
+    // Registra providers padrão
+    if (this.config.autoRegisterDefaults) {
+      this.registerDefaultProviders()
+    }
   }
 
   /**
-   * Obtém a instância singleton do factory
+   * Obtém instância singleton
    */
-  static getInstance(): QueryProviderFactory {
+  static getInstance(config?: Partial<FactoryConfig>): QueryProviderFactory {
     if (!QueryProviderFactory.instance) {
-      QueryProviderFactory.instance = new QueryProviderFactory()
+      QueryProviderFactory.instance = new QueryProviderFactory(config)
     }
     return QueryProviderFactory.instance
   }
 
   /**
-   * Reseta a instância (útil para testes)
+   * Reseta instância (para testes)
    */
   static resetInstance(): void {
+    ProviderRegistry.resetInstance()
     QueryProviderFactory.instance = null
+  }
+
+  /**
+   * Detecta modo baseado no NODE_ENV
+   */
+  private detectMode(): FactoryMode {
+    if (process.env.NODE_ENV === 'test') return 'test'
+    if (process.env.NODE_ENV === 'production') return 'production'
+    return 'development'
+  }
+
+  // ============================================================================
+  // CONFIGURATION
+  // ============================================================================
+
+  /**
+   * Obtém configuração atual
+   */
+  getConfig(): FactoryConfig {
+    return { ...this.config }
+  }
+
+  /**
+   * Define modo de operação
+   */
+  setMode(mode: FactoryMode): void {
+    this.config.mode = mode
+
+    // Atualiza ambiente no registry
+    this.registry.setEnvironment(mode)
+
+    // Em produção, desabilita mock por padrão
+    if (mode === 'production') {
+      this.registry.setAllowMockFallbackInProduction(
+        this.config.allowMockInProduction
+      )
+    }
+  }
+
+  /**
+   * Obtém modo atual
+   */
+  getMode(): FactoryMode {
+    return this.config.mode
   }
 
   // ============================================================================
@@ -105,45 +218,40 @@ export class QueryProviderFactory {
   register(
     name: string,
     provider: IQueryProvider,
-    config: { id: string; slug: string; type: ProviderType; active: boolean }
+    config: {
+      id: string
+      slug: string
+      type: ProviderType
+      active: boolean
+      priority?: number
+      environments?: Environment[]
+      costPerQuery?: number
+    }
   ): void {
     const capabilities = provider.getCapabilities()
+    const supportedQueryTypes = capabilities.map((c) => c.queryType)
 
-    this.providers.set(name, {
+    this.registry.register({
+      id: name,
+      name: provider.name,
+      type: config.type,
       provider,
-      config,
-      capabilities,
-    })
-
-    // Atualiza o mapa de queryType -> providers
-    capabilities.forEach((cap) => {
-      const existing = this.queryTypeMap.get(cap.queryType) || []
-      if (!existing.includes(name)) {
-        existing.push(name)
-        this.queryTypeMap.set(cap.queryType, existing)
-      }
+      supportedQueryTypes,
+      enabled: config.active,
+      priority: config.priority ?? 100,
+      environments: config.environments ?? ['development', 'test', 'production'],
+      isMock: config.type === 'mock',
+      costPerQuery: config.costPerQuery ?? 0,
     })
   }
 
   /**
-   * Remove um provider registrado
+   * Remove um provider
    *
    * @param name - Nome do provider
    */
   unregister(name: string): void {
-    const registration = this.providers.get(name)
-    if (registration) {
-      // Remove do queryTypeMap
-      registration.capabilities.forEach((cap) => {
-        const existing = this.queryTypeMap.get(cap.queryType) || []
-        const index = existing.indexOf(name)
-        if (index > -1) {
-          existing.splice(index, 1)
-        }
-      })
-
-      this.providers.delete(name)
-    }
+    this.registry.unregister(name)
   }
 
   // ============================================================================
@@ -160,29 +268,111 @@ export class QueryProviderFactory {
   async execute(
     request: QueryRequest,
     preferredProvider?: string
-  ): Promise<QueryResult> {
-    // Se provider preferido especificado, tenta usá-lo
-    if (preferredProvider) {
-      const registration = this.providers.get(preferredProvider)
-      if (registration && registration.config.active) {
-        return registration.provider.execute(request)
+  ): Promise<DetailedQueryResult> {
+    // Em modo test, sempre usa mock se não houver preferido
+    if (this.config.mode === 'test' && !preferredProvider) {
+      const mockResult = this.registry.findProvider({
+        queryType: request.queryType,
+        environment: 'test',
+        includeMock: true,
+      })
+
+      if (mockResult) {
+        return this.executeWithProvider(request, mockResult)
       }
     }
 
-    // Caso contrário, seleciona o primeiro provider disponível
-    const provider = this.getProviderForQuery(request.queryType)
+    // Busca provider no registry
+    const findResult = this.registry.findProvider({
+      queryType: request.queryType,
+      environment: this.config.mode,
+      includeMock: true,
+      preferredProvider,
+    })
 
-    if (!provider) {
+    if (!findResult) {
+      // Nenhum provider encontrado
+      if (this.config.mode === 'production') {
+        // Em produção, retorna erro claro
+        return {
+          success: false,
+          rawData: {},
+          error: `Nenhum provider disponível para consulta ${request.queryType} em produção`,
+          errorCode: 'NO_PROVIDER_AVAILABLE',
+          providerUsed: undefined,
+          providerType: undefined,
+          wasFallback: false,
+          environment: this.config.mode,
+        }
+      }
+
+      // Em desenvolvimento/teste, tenta mock como último recurso
+      const mockFallback = this.registry.findProvider({
+        queryType: request.queryType,
+        includeMock: true,
+      })
+
+      if (mockFallback) {
+        return this.executeWithProvider(request, mockFallback)
+      }
+
       return {
         success: false,
         rawData: {},
         error: `Nenhum provider disponível para o tipo de consulta: ${request.queryType}`,
         errorCode: 'NO_PROVIDER_AVAILABLE',
+        providerUsed: undefined,
+        providerType: undefined,
+        wasFallback: false,
+        environment: this.config.mode,
       }
     }
 
-    return provider.execute(request)
+    return this.executeWithProvider(request, findResult)
   }
+
+  /**
+   * Executa consulta com um provider específico
+   */
+  private async executeWithProvider(
+    request: QueryRequest,
+    findResult: FindProviderResult
+  ): Promise<DetailedQueryResult> {
+    const { provider, entry, isMock, reason } = findResult
+
+    if (this.config.debugMode) {
+      console.log(
+        `[QueryProviderFactory] Executando com: ${entry.name} (${entry.type}) - Razão: ${reason}`
+      )
+    }
+
+    try {
+      const result = await provider.execute(request)
+
+      return {
+        ...result,
+        providerUsed: entry.name,
+        providerType: entry.type,
+        wasFallback: reason === 'mock_fallback' || reason === 'fallback',
+        environment: this.config.mode,
+      }
+    } catch (error) {
+      return {
+        success: false,
+        rawData: {},
+        error: error instanceof Error ? error.message : 'Erro desconhecido',
+        errorCode: 'EXECUTION_ERROR',
+        providerUsed: entry.name,
+        providerType: entry.type,
+        wasFallback: false,
+        environment: this.config.mode,
+      }
+    }
+  }
+
+  // ============================================================================
+  // QUERIES
+  // ============================================================================
 
   /**
    * Obtém um provider capaz de processar o tipo de consulta
@@ -191,22 +381,13 @@ export class QueryProviderFactory {
    * @returns Provider disponível ou null
    */
   getProviderForQuery(queryType: QueryType): IQueryProvider | null {
-    const providerNames = this.queryTypeMap.get(queryType) || []
+    const result = this.registry.findProvider({
+      queryType,
+      environment: this.config.mode,
+    })
 
-    // Encontra o primeiro provider ativo
-    for (const name of providerNames) {
-      const registration = this.providers.get(name)
-      if (registration && registration.config.active) {
-        return registration.provider
-      }
-    }
-
-    return null
+    return result?.provider || null
   }
-
-  // ============================================================================
-  // QUERIES
-  // ============================================================================
 
   /**
    * Lista todos os providers registrados
@@ -217,11 +398,12 @@ export class QueryProviderFactory {
     active: boolean
     capabilities: ProviderCapability[]
   }> {
-    return Array.from(this.providers.entries()).map(([name, reg]) => ({
-      name,
-      type: reg.config.type,
-      active: reg.config.active,
-      capabilities: reg.capabilities,
+    const entries = this.registry.list()
+    return entries.map((entry) => ({
+      name: entry.name,
+      type: entry.type,
+      active: entry.enabled,
+      capabilities: entry.provider.getCapabilities(),
     }))
   }
 
@@ -232,7 +414,8 @@ export class QueryProviderFactory {
    * @returns Instância do provider ou null
    */
   getProvider(name: string): IQueryProvider | null {
-    return this.providers.get(name)?.provider || null
+    const entry = this.registry.get(name)
+    return entry?.provider || null
   }
 
   /**
@@ -241,14 +424,14 @@ export class QueryProviderFactory {
    * @param name - Nome do provider
    */
   hasProvider(name: string): boolean {
-    return this.providers.has(name)
+    return this.registry.has(name)
   }
 
   /**
    * Obtém todos os tipos de consulta suportados
    */
   getSupportedQueryTypes(): QueryType[] {
-    return Array.from(this.queryTypeMap.keys())
+    return this.registry.getSupportedQueryTypes()
   }
 
   /**
@@ -257,11 +440,7 @@ export class QueryProviderFactory {
    * @param queryType - Tipo da consulta
    */
   isQueryTypeSupported(queryType: QueryType): boolean {
-    const providers = this.queryTypeMap.get(queryType) || []
-    return providers.some((name) => {
-      const reg = this.providers.get(name)
-      return reg?.config.active
-    })
+    return this.registry.isQueryTypeSupported(queryType)
   }
 
   // ============================================================================
@@ -269,17 +448,60 @@ export class QueryProviderFactory {
   // ============================================================================
 
   /**
-   * Registra providers padrão (Mock)
+   * Registra providers padrão
+   *
+   * Em produção:
+   * - Mock NÃO é registrado automaticamente
+   * - Apenas providers reais habilitados
+   *
+   * Em development/test:
+   * - Mock é registrado sempre
+   * - Providers reais são registrados se habilitados
    */
   private registerDefaultProviders(): void {
-    // Registra Mock Provider
-    const mockProvider = new MockQueryProvider()
-    this.register('mock', mockProvider, {
-      id: 'mock-001',
-      slug: 'mock-provider',
-      type: 'mock',
-      active: true,
-    })
+    // SEMPRE registra Mock Provider (para development/test)
+    // Em produção, NÃO registra mock por padrão
+    if (this.config.mode !== 'production' || this.config.allowMockInProduction) {
+      const mockProvider = new MockQueryProvider({ simulatedDelay: 0 })
+      this.register('mock', mockProvider, {
+        id: 'mock-001',
+        slug: 'mock-provider',
+        type: 'mock',
+        active: true,
+        priority: 1000, // Baixa prioridade (fallback)
+        environments: ['development', 'test'],
+        costPerQuery: 0,
+      })
+    }
+
+    // Registra INSS Conecta Provider se habilitado e pronto
+    if (isINSSConectaProviderReady()) {
+      const inssProvider = new INSSConectaProvider()
+      this.register('inss-conecta', inssProvider, {
+        id: 'inss-conecta-001',
+        slug: 'inss-conecta',
+        type: 'inss-conecta',
+        active: true,
+        priority: 10, // Alta prioridade
+        environments: ['production'], // Apenas produção
+        costPerQuery: 0,
+      })
+    }
+  }
+
+  // ============================================================================
+  // STATS
+  // ============================================================================
+
+  /**
+   * Obtém estatísticas da factory
+   */
+  getStats() {
+    return {
+      mode: this.config.mode,
+      allowMockInProduction: this.config.allowMockInProduction,
+      registry: this.registry.getStats(),
+    }
   }
 }
 
@@ -297,7 +519,7 @@ export class QueryProviderFactory {
 export async function executeQuery(
   request: QueryRequest,
   preferredProvider?: string
-): Promise<QueryResult> {
+): Promise<DetailedQueryResult> {
   const factory = QueryProviderFactory.getInstance()
   return factory.execute(request, preferredProvider)
 }
