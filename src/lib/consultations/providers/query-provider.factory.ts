@@ -26,6 +26,7 @@ import type {
 import type { IQueryProvider } from './query-provider.interface'
 import { MockQueryProvider } from './mock/mock-query.provider'
 import { INSSConectaProvider, isINSSConectaProviderReady } from './inss-conecta'
+import { CPFHubProvider, isCPFHubProviderReady } from './cpfhub'
 import {
   ProviderRegistry,
   type Environment,
@@ -485,6 +486,20 @@ export class QueryProviderFactory {
         priority: 10, // Alta prioridade
         environments: ['production'], // Apenas produção
         costPerQuery: 0,
+      })
+    }
+
+    // Registra CPFHub Provider se habilitado e pronto
+    if (isCPFHubProviderReady()) {
+      const cpfHubProvider = new CPFHubProvider()
+      this.register('cpfhub', cpfHubProvider, {
+        id: 'cpfhub-001',
+        slug: 'cpfhub',
+        type: 'cpfhub',
+        active: true,
+        priority: 5, // Alta prioridade (maior que INSS)
+        environments: ['development', 'test', 'production'],
+        costPerQuery: 0, // Gratuito (50/mês)
       })
     }
   }

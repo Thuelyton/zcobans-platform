@@ -107,3 +107,28 @@ export type {
   INSSBenefitResponse,
   INSSErrorResponse,
 } from './inss-conecta'
+
+// ============================================================================
+// CPFHUB PROVIDER
+// ============================================================================
+
+export {
+  CPFHubProvider,
+  getCPFHubConfig,
+  validateCPFHubConfig,
+  getCPFHubConfigErrors,
+  isCPFHubProviderReady,
+  getCPFHubDiagnostics,
+} from './cpfhub'
+
+export type {
+  CPFHubConfig,
+  CPFHubRequest,
+  CPFHubResponse,
+  CPFHubSuccessResponse,
+  CPFHubErrorResponse,
+  RateLimitStatus,
+  MonthlyCounter,
+  CPFHubProviderStatus,
+  CPFHubErrorCode,
+} from './cpfhub'
